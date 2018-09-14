@@ -1,13 +1,11 @@
-let http = require('http')
-let fs = require('fs')
-let webdriver = require('selenium-webdriver')
-let until = webdriver.until
-let By = webdriver.By
-let Key = webdriver.Key
-let accents = require('remove-accents')
+const fs = require('fs')
+const webdriver = require('selenium-webdriver')
+const until = webdriver.until
+const By = webdriver.By
+const productEventEmitter = require('./event-emiter').productEventEmitter
 
 async function collectProducts() {
-    if(!fs.existsSync("images")) fs.mkdirSync("images")
+    if(!fs.existsSync("data")) fs.mkdirSync("data")
     driver.get("http://www.ilewazy.pl")
     await clickAcceptButton()
     await clickToProducts()
@@ -27,20 +25,19 @@ async function collectProducts() {
 
 async function clickAcceptButton() {
     const button = await driver.wait(until.elementLocated(By.xpath("//*[@class=\"btn accept-targeting-disclaimer-button\"]")), 3000)
-        .then(async (element) => { return await driver.wait(until.elementIsVisible(element), 3000)})
+        .then(e => driver.wait(until.elementIsVisible(e), 3000))
     await button.click()
 }
 
 async function clickToProducts() {
     const productCategories = await driver.wait(until.elementLocated(By.xpath("//ul/li/a[@href=\"/produkty\"]")), 3000)
     await click(productCategories)
-    console.log("clickToProducts")
 }
 
 async function collectProductsOnPage() {
-    const products = await driver.wait(until.elementLocated(By.id("thumbnails")), 30000)
-    .then(e => driver.findElements(By.xpath("//ul[@id=\"thumbnails\"]/li/div[@class=\"subtitle\"]/a")))
-    return Promise.all(products.map(async (p) => await p.getAttribute("href")))
+    return await driver.wait(until.elementLocated(By.id("thumbnails")), 30000)
+        .then(e => driver.findElements(By.xpath("//ul[@id=\"thumbnails\"]/li/div[@class=\"subtitle\"]/a")))
+        .then(e => Promise.all(e.map(async (p) => await p.getAttribute("href"))))
 }
 
 async function openInNewTab(link){
@@ -48,119 +45,70 @@ async function openInNewTab(link){
     const handles = await driver.getAllWindowHandles()
     await driver.switchTo().window(handles[1])
     await driver.get(link)
-    console.log('openInNewTab')
 }
 
 async function processData(link){
-
     console.log("\nI AM PROCESSING " +  link)
+    const result = {}
+    result["link"] = link
+    result["categoryName"] = await getCategoryName()
+    result["productName"] = await getProductName()
+    result["nutritionalValues"] = await getNutritionalValues()
+    result["information"] = await getInformationTable()
+    result["imagesLinks"] = await getImagesLinks()
+    productEventEmitter.emit("collected", result)
+    return result
+}
 
+async function getCategoryName(){
     const metaInfo = await driver.wait(until.elementLocated(By.xpath("//span[@itemprop=\"name\"]")), 30000)
-    .then(e => driver.findElements(By.xpath("//span[@itemprop=\"name\"]")))
-    
-    const category = await metaInfo[1].getText()
-    const productName = await metaInfo[2].getText()
+        .then(e => driver.findElements(By.xpath("//span[@itemprop=\"name\"]")))
+        return metaInfo[1].getText()
+}
 
-    const ingredientsTable= await driver.wait(until.elementLocated(By.id("ilewazy-ingedients")), 30000)
-    .then(e => driver.findElement(By.id("ilewazy-ingedients")))
+async function getProductName(){
+    const metaInfo = await driver.wait(until.elementLocated(By.xpath("//span[@itemprop=\"name\"]")), 30000)
+        .then(e => driver.findElements(By.xpath("//span[@itemprop=\"name\"]")))
+    return metaInfo[2].getText()
+}
 
-    const theadRow = await ingredientsTable.findElements(By.xpath(".//thead/tr/th"))
-    const theadTexts = await Promise.all(theadRow.map(t => t.getText()))
-    const hundredGramsText = await ingredientsTable.findElement(By.xpath(".//thead/tr/th[@class=\"colper100g\"]")).getText()
-    const photoGramsText = await ingredientsTable.findElement(By.xpath(".//thead/tr/th[@class=\"colperphoto\"]")).getText()
+async function getImagesLinks(){
+    return await driver.wait(until.elementLocated(By.xpath("//div/a[@rel=\"lightbox['wazenie']\"]")), 30000)
+        .then(e => driver.findElements(By.xpath("//div/a[@rel=\"lightbox['wazenie']\"]/img/..")))
+        .then(e => Promise.all(e.map(p => p.getAttribute("href"))))
+}
 
-    const hundredGramsIndex = theadTexts.findIndex(t => t == hundredGramsText)
-    const photoGramsIndex = theadTexts.findIndex(t => t == photoGramsText)
-
-    const tbodyRows = await ingredientsTable.findElements(By.xpath(".//tbody/tr"))
-
-    const hundredGrams = {}
-    hundredGrams["waga"] = 100
-    const photoGrams = {}
-    photoGrams["waga"] = normalizeValue(theadTexts[photoGramsIndex])
-
-    for(let row of tbodyRows){
-        const cells = await row.findElements(By.xpath(".//td"))
-        const cellsTexts = await Promise.all(cells.map(c => c.getText()))
-        const key = normalizeKey(cellsTexts[0])
-        hundredGrams[key] = normalizeValue(cellsTexts[hundredGramsIndex])
-        if(hundredGrams[key] == "") delete hundredGrams[key]
-        photoGrams[key] = normalizeValue(cellsTexts[photoGramsIndex])
-        if(photoGrams[key] == "") delete photoGrams[key]
+async function getInformationTable(){
+    const resultTable = []
+    const informationRows = await driver.wait(until.elementLocated(By.xpath("//*[@class=\"product-data table table-condensed\"]")), 30000)
+        .then(e => driver.findElements(By.xpath("//*[@class=\"product-data table table-condensed\"]//tbody/tr")))
+    for(let r of informationRows){
+        const cellsTexts = await r.findElements(By.xpath(".//td"))
+            .then(e => Promise.all(e.map(c => c.getText())))
+        resultTable.push(cellsTexts)
     }
+    return resultTable
+}
 
-    console.log(hundredGrams)
-    console.log(photoGrams)
-
-    /*
-    let energy
-    let protein
-    let carbohydrates
-    let simpleSugars
-    let fat
-    let saturatedFattyAcids
-    let roughage
-    let salt
-    */
-
-   const informationTable= await driver.wait(until.elementLocated(By.xpath("//*[@class=\"product-data table table-condensed\"]")), 30000)
-   .then(e => driver.findElement(By.xpath("//*[@class=\"product-data table table-condensed\"]")))
-   const informationRows = await informationTable.findElements(By.xpath(".//tbody/tr"))
-
-   const information = {}
-
-    for(let row of informationRows){
-        const cells = await row.findElements(By.xpath(".//td"))
-        const cellsTexts = await Promise.all(cells.map(c => c.getText()))
-        information[normalizeKey(cellsTexts[0]).toLowerCase().replace(':', '')] = cellsTexts[1]
+async function getNutritionalValues(){
+    const resultTable = []
+    const nutritionalValuesTable = await driver.wait(until.elementLocated(By.id("ilewazy-ingedients")), 30000)
+        .then(e => driver.findElement(By.id("ilewazy-ingedients")))
+    const theadTexts = await nutritionalValuesTable.findElements(By.xpath(".//thead/tr/th"))
+        .then(e => Promise.all(e.map(t => t.getText())))
+    resultTable.push(theadTexts)
+    const tbodyRows = await nutritionalValuesTable.findElements(By.xpath(".//tbody/tr"))
+    for(let r of tbodyRows){
+        const cellsTexts = await r.findElements(By.xpath(".//td"))
+            .then(e => Promise.all(e.map(c => c.getText())))
+        resultTable.push(cellsTexts)
     }
-
-    console.log(information)
-
-    /*
-    let ingredients
-    let producer
-    let brand
-    let information
-    */
-
-   const images = await driver.wait(until.elementLocated(By.xpath("//div/a[@rel=\"lightbox['wazenie']\"]")), 30000)
-   .then(e => driver.findElements(By.xpath("//div/a[@rel=\"lightbox['wazenie']\"]/img/..")))
-
-   imagesLinks = await Promise.all(images.map(async (p) => await p.getAttribute("href")))
-   imagesLinks.forEach(imgLink => downloadImage(imgLink, link.split("/").slice(-1)[0], imgLink.split("/").slice(-1)[0] + ".jpg"))
-
-   // let images
-
-   console.log("\n")
-}
-
-function normalizeKey(key){
-    return accents.remove(key).toLowerCase().replace(':', '')
-}
-
-function normalizeValue(value){
-    let response = ""
-    try{
-        response = value.includes("kcal") ? value.match(/[0-9]+/g)[0] : value.includes("g") ? value.match(/[0-9]+,*[0-9]+/g)[0].replace(',','.') : ""
-    } finally {
-        return response == "" ? response : Number(response)
-    }
-}
-
-function getName(path) {
-    EncodeUrl(path).nameWithExtension
-}
-
-async function downloadImage(url, dir, name){
-    if(!fs.existsSync("images" + "\\" + dir)) fs.mkdirSync("images" + "\\" + dir)
-    var file = fs.createWriteStream("images" + "\\" + dir + "\\" + name)
-    var request = http.get(url, r => r.pipe(file))
+    return resultTable
 }
 
 async function getNextPageButton(){
     const pageButtons = await driver.wait(until.elementLocated(By.xpath("//div[@class=\"pagination  paginator-top\"]//li/a")), 30000)
-    .then(e => driver.findElements(By.xpath("//div[@class=\"pagination  paginator-top\"]//li/a")))
+        .then(e => driver.findElements(By.xpath("//div[@class=\"pagination  paginator-top\"]//li/a")))
     return pageButtons.pop()    
 }
 
