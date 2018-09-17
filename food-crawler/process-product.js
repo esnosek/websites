@@ -1,61 +1,69 @@
+const rp = require('request-promise')
+const request = require('request')
 const accents = require('remove-accents')
 const http = require('http')
 const fs = require('fs')
 
 async function processData(result){
+    const name = getName(result["link"])
+    const dataDir = "data" + "\\" + name
     processedResult = {}
-    processedResult["images"] = await downloadImages(result)
+    processedResult["images"] = await downloadImages(result, dataDir)
     processedResult["categoryName"] = result["categoryName"]
     processedResult["productName"] = result["productName"]
-    processedResult["nutritionalValues"] = await processNutritionalValues(result)
+    processedResult["nutritionalValues"] = await processNutritionalValues100g(result)
     processedResult["nutritionalValuesPhoto"] = await processNutritionalValuesPhoto(result)
     processedResult["information"] = await processInformation(result)
-    console.log(processedResult)
+    saveJSON(processedResult, dataDir, name)
 }
 
-async function processNutritionalValues(result){
-    index = result["nutritionalValues"][0].findIndex(e => e == '100g')
-    values = {}
-    result["nutritionalValues"].forEach(e => {
-        key = normalizeKey(e[0])
-        value = normalizeNumberValue(e[index])
-        if(key && !isNaN(value)) values[key] = normalizeNumberValue(e[index])
-    })
-    return values
+async function saveJSON(result, dataDir, name){
+    const fileName = dataDir + "\\" + name + ".json"
+    fs.writeFile(fileName, JSON.stringify(result, null, 4), function (err) {})
+    console.log(JSON.stringify(result, null, 4))
+}
+
+async function processNutritionalValues100g(result){
+    const index = result["nutritionalValues"][0].findIndex(e => e == '100g')
+    return processNutritionalValues(result["nutritionalValues"], index)
 }
 
 async function processNutritionalValuesPhoto(result){
-    index100g = result["nutritionalValues"][0].findIndex(e => e == '100g')
-    index = index100g == 1 ? 2 : 1
-    values = {}
-    result["nutritionalValues"].forEach(e => {
-        key = normalizeKey(e[0])
-        value = normalizeNumberValue(e[index])
-        if(key && !isNaN(value)) values[key] = normalizeNumberValue(e[index])
+    const index100g = result["nutritionalValues"][0].findIndex(e => e == '100g')
+    const index = index100g == 1 ? 2 : 1
+    return processNutritionalValues(result["nutritionalValues"], index)
+}
+
+async function processNutritionalValues(rows, col){
+    const values = {}
+    rows.forEach(r => {
+        key = normalizeKey(r[0])
+        value = normalizeNumberValue(r[col])
+        if(key && !isNaN(value)) values[key] = normalizeNumberValue(r[col])
     })
+    values["weight"] = normalizeNumberValue(rows[0][col])
     return values
 }
 
 async function processInformation(result){
-    values = {}
+    const values = {}
     result["information"].forEach(e => values[normalizeKey(e[0])] = e[1])
     return values    
 }
 
-async function downloadImages(result){
-    const productFolder = getName(result["link"])
-    imgPaths = []
-    result["imagesLinks"].forEach(e => imgPaths.push(downloadImage(e, productFolder, getName(e))))
+async function downloadImages(result, dataDir){
+    const imgPaths = []
+    for(link of result["imagesLinks"])
+        await downloadImage(link, dataDir, getName(link), n => imgPaths.push(n))
     return imgPaths
 }
 
-async function downloadImage(url, dir, name){
-    const dataDir = "data"
-    if(!fs.existsSync(dataDir + "\\" + dir)) fs.mkdirSync(dataDir + "\\" + dir)
-    const file = fs.createWriteStream(dataDir + "\\" + dir + "\\" + name)
-
-    //ERROR!
-    return http.get(url, r => r.pipe(file).on('close', e => dataDir + "\\" + dir + "\\" + name))
+async function downloadImage(url, dataDir, name, cb){
+    const fullPath = dataDir + "\\" + name
+    if(!fs.existsSync(dataDir)) fs.mkdirSync(dataDir)
+    await rp(url, {encoding: 'binary'}, function(error, response, body){
+        fs.writeFileSync(fullPath, body, 'binary', function (err) {});
+    }).then(() => cb(name))
 }
 
 function getName(url){
@@ -83,8 +91,8 @@ function normalizeKey(key){
 
 function normalizeNumberValue(value){
     let response = ""
-    try{
-        response = value.includes("kcal") ? value.match(/[0-9]+/g)[0] : value.includes("g") ? value.match(/[0-9]+,*[0-9]+/g)[0].replace(',','.') : ""
+    try {
+        response = value.includes("kcal") ? value.match(/[0-9]+/g)[0] : value.includes("g") ? value.match(/[0-9]+,*[0-9]*/g)[0].replace(',','.') : ""
     } finally {
         return response == "" ? NaN : Number(response)
     }

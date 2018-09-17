@@ -10,17 +10,22 @@ async function collectProducts() {
     await clickAcceptButton()
     await clickToProducts()
     const mainHandle = await driver.getWindowHandle()
+    let i = 0
     while(true){
         const productsLinks = await collectProductsOnPage()
-        console.log('links', productsLinks)
+        console.log("Processing " + ++i + " page")
+        console.log("Links: ", productsLinks)
         for(const link of productsLinks) {
 	        await openInNewTab(link)
             await processData(link)
             await driver.close()
             await driver.switchTo().window(mainHandle)
         }
-        await click(await getNextPageButton())
+        const nextPageButton = await getNextPageButton()
+        if(!nextPageButton) break
+        await click(await nextPageButton)
     }
+    console.log("Finish collecting data")
 }
 
 async function clickAcceptButton() {
@@ -48,7 +53,7 @@ async function openInNewTab(link){
 }
 
 async function processData(link){
-    console.log("\nI AM PROCESSING " +  link)
+    console.log("\nProcessing: " +  link)
     const result = {}
     result["link"] = link
     result["categoryName"] = await getCategoryName()
@@ -107,9 +112,13 @@ async function getNutritionalValues(){
 }
 
 async function getNextPageButton(){
-    const pageButtons = await driver.wait(until.elementLocated(By.xpath("//div[@class=\"pagination  paginator-top\"]//li/a")), 30000)
-        .then(e => driver.findElements(By.xpath("//div[@class=\"pagination  paginator-top\"]//li/a")))
-    return pageButtons.pop()    
+    const pageButtons = await driver.wait(until.elementLocated(By.xpath("//div[@class=\"pagination  paginator-top\"]//li")), 30000)
+        .then(e => driver.findElements(By.xpath("//div[@class=\"pagination  paginator-top\"]//li")))
+    const nextPageButton = pageButtons.pop()
+    const className = await nextPageButton.getAttribute("class")
+    if(className === "disabled") return NaN
+    const nextButtonLink = await Promise.all(await nextPageButton.findElements(By.xpath(".//a")))
+    return nextButtonLink[0]
 }
 
 async function click(element){
