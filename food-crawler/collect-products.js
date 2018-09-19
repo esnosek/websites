@@ -1,8 +1,8 @@
-const fs = require('fs')
-const webdriver = require('selenium-webdriver')
-const until = webdriver.until
-const By = webdriver.By
+const { Builder, By, Key, promise, until } = require('selenium-webdriver')
 const productEventEmitter = require('./event-emiter').productEventEmitter
+const firefox = require('selenium-webdriver/firefox')
+const chrome = require('selenium-webdriver/chrome')
+const fs = require('fs')
 
 async function collectProducts() {
     if(!fs.existsSync("data")) fs.mkdirSync("data")
@@ -16,16 +16,25 @@ async function collectProducts() {
         console.log("Processing " + ++i + " page")
         console.log("Links: ", productsLinks)
         for(const link of productsLinks) {
-	        await openInNewTab(link)
-            await processData(link)
-            await driver.close()
-            await driver.switchTo().window(mainHandle)
+            if(!fs.existsSync("data" + "\\" + await getName(link))){
+                await openInNewTab(link)
+                await processData(link)
+                await driver.close()
+                await driver.switchTo().window(mainHandle)
+            }
         }
         const nextPageButton = await getNextPageButton()
-        if(!nextPageButton) break
-        await click(await nextPageButton)
+        if(!nextPageButton)
+            break
+        const page = await driver.findElement(By.tagName("html"))
+        await click(nextPageButton)
+        await waitUntilPageLoad(page)
     }
     console.log("Finish collecting data")
+}
+
+async function getName(url){
+    return new URL(url).pathname.split("/").slice(-1)[0]
 }
 
 async function clickAcceptButton() {
@@ -42,7 +51,11 @@ async function clickToProducts() {
 async function collectProductsOnPage() {
     return await driver.wait(until.elementLocated(By.id("thumbnails")), 30000)
         .then(e => driver.findElements(By.xpath("//ul[@id=\"thumbnails\"]/li/div[@class=\"subtitle\"]/a")))
-        .then(e => Promise.all(e.map(async (p) => await p.getAttribute("href"))))
+        .then(e => Promise.all(e.map(p => p.getAttribute("href"))))
+}
+
+async function waitUntilPageLoad(oldPage){
+    await driver.wait(until.stalenessOf(oldPage), 30000)
 }
 
 async function openInNewTab(link){
@@ -80,7 +93,7 @@ async function getProductName(){
 async function getImagesLinks(){
     return await driver.wait(until.elementLocated(By.xpath("//div/a[@rel=\"lightbox['wazenie']\"]")), 30000)
         .then(e => driver.findElements(By.xpath("//div/a[@rel=\"lightbox['wazenie']\"]/img/..")))
-        .then(e => Promise.all(e.map(p => p.getAttribute("href"))))
+        .then(e => Promise.all(e.map(async(p) => await p.getAttribute("href"))))
 }
 
 async function getInformationTable(){
@@ -89,7 +102,7 @@ async function getInformationTable(){
         .then(e => driver.findElements(By.xpath("//*[@class=\"product-data table table-condensed\"]//tbody/tr")))
     for(let r of informationRows){
         const cellsTexts = await r.findElements(By.xpath(".//td"))
-            .then(e => Promise.all(e.map(c => c.getText())))
+            .then(e => Promise.all(e.map(async(c) => await c.getText())))
         resultTable.push(cellsTexts)
     }
     return resultTable
@@ -115,8 +128,8 @@ async function getNextPageButton(){
     const pageButtons = await driver.wait(until.elementLocated(By.xpath("//div[@class=\"pagination  paginator-top\"]//li")), 30000)
         .then(e => driver.findElements(By.xpath("//div[@class=\"pagination  paginator-top\"]//li")))
     const nextPageButton = pageButtons.pop()
-    const className = await nextPageButton.getAttribute("class")
-    if(className === "disabled") return NaN
+    if(await nextPageButton.getAttribute("class") === "disabled") 
+        return NaN
     const nextButtonLink = await Promise.all(await nextPageButton.findElements(By.xpath(".//a")))
     return nextButtonLink[0]
 }
@@ -129,7 +142,10 @@ async function click(element){
 }
 
 try {
-    driver = new webdriver.Builder().forBrowser('chrome').build()
+    driver = new Builder()
+        .forBrowser('firefox')
+        .setFirefoxOptions(new firefox.Options().headless())
+        .build()
     collectProducts()
 } catch(e) {
     console.log(e)

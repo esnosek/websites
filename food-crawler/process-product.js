@@ -19,8 +19,9 @@ async function processData(result){
 
 async function saveJSON(result, dataDir, name){
     const fileName = dataDir + "\\" + name + ".json"
-    fs.writeFile(fileName, JSON.stringify(result, null, 4), function (err) {})
-    console.log(JSON.stringify(result, null, 4))
+    resultJSON = JSON.stringify(result, null, 4)
+    fs.writeFile(fileName, resultJSON, function (err) {})
+    //console.log(resultJSON)
 }
 
 async function processNutritionalValues100g(result){
