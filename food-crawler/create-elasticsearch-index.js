@@ -22,11 +22,11 @@ async function createIndex(){
 function addProducts(){
   glob("data/**/*.json", {matchBase:true}, (err, res) => {
     if (err) throw err;
-    addBulk(res)
+    addAll(res)
   });
 }
 
-function addBulk(files){
+function addAll(files){
   const data = []
   files.forEach(f => {
     data.push({ index:  { _index: 'food-index', _type: 'product'} });

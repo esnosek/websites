@@ -1,0 +1,24 @@
+html
+    head
+        title Food Calc
+    body
+        h1 Food Calc
+        div
+            form(method="GET", action="/product" enctype="application/json") Search product:
+                input(id="query", type="text", name="query")
+                button(id="submit" type="submit")= "Search"
+        div
+            table(id = "todaysProducts")
+                tr 
+                    th Product
+                    th Energy
+                    th Protein
+                    th Carbohydrates
+                    th Fat
+                each product in products
+                    tr
+                        td= product.productName
+                        td= product.nutritionalValues.energy
+                        td= product.nutritionalValues.protein
+                        td= product.nutritionalValues.carbohydrates
+                        td= product.nutritionalValues.fat
