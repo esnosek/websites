@@ -11,7 +11,7 @@ async function search(product){
         index: 'food-index',
         type: 'product',
         body: {
-            size : 1000,
+            size : 12,
             query: {
                 match: {
                     productName: product

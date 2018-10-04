@@ -1,24 +1,70 @@
 html
     head
+        link(rel="stylesheet" type="text/css" href="styles/styles.css")
         title Food Calc
     body
-        h1 Food Calc
-        div
-            form(method="GET", action="/product" enctype="application/json") Search product:
-                input(id="query", type="text", name="query")
-                button(id="submit" type="submit")= "Search"
-        div
-            table(id = "todaysProducts")
-                tr 
-                    th Product
-                    th Energy
-                    th Protein
-                    th Carbohydrates
-                    th Fat
-                each product in products
+        div(class="grid-container")
+            div(class="search")
+                form(method="GET", action="/product" enctype="application/json")
+                    input(id="query", type="text", name="query")
+                    button(id="submit" type="submit")= "Search"
+                div(id='products', class="flex-container")
+                    each product in foundProducts
+                        div(onclick="addProduct(this)")= product.productName
+                div(id="productInfo")
+                    table(id='productInfoTable', class="table")
+            div(class="left")
+                caption TODAY TO EAT
+                    table(id="todayToEat", class="table")
+                        tr
+                            td Energy
+                            td= todayToEat.energy
+                        tr
+                            td Protein
+                            td= todayToEat.protein
+                        tr
+                            td Carbohydrates
+                            td= todayToEat.carbohydrates
+                        tr
+                            td Fat
+                            td= todayToEat.fat
+            div(class="right")
+                caption EATEN TODAY
+                table(id="eatenToday", class="table")
                     tr
-                        td= product.productName
-                        td= product.nutritionalValues.energy
-                        td= product.nutritionalValues.protein
-                        td= product.nutritionalValues.carbohydrates
-                        td= product.nutritionalValues.fat
+                        td Energy
+                        td= eatenToday.energy
+                    tr
+                        td Protein
+                        td= eatenToday.protein
+                    tr
+                        td Carbohydrates
+                        td= eatenToday.carbohydrates
+                    tr
+                        td Fat
+                        td= eatenToday.fat
+            div(class="main")
+                table(id = "todaysProducts", class="table")
+                    tr 
+                        th Product
+                        th Quantity
+                        th Energy
+                        th Protein
+                        th Carbohydrates
+                        th Fat
+                    each product in todaysProducts
+                        tr
+                            td= product.productName
+                            td= product.quantity + " g"
+                            td= product.nutritionalValues.energy + " kcal"
+                            td= product.nutritionalValues.protein + " g"
+                            td= product.nutritionalValues.carbohydrates + " g"
+                            td= product.nutritionalValues.fat + " g"
+                    tr
+                        td SUMA
+                        td= allValues.quantity + " g"
+                        td= allValues.energy + " kcal"
+                        td= allValues.protein + " g"
+                        td= allValues.carbohydrates + " g"
+                        td= allValues.fat + " g"
+    script(src='scripts/products.js' type="text/javascript")
