@@ -54,17 +54,23 @@ html
                         th Fat
                     each product in todaysProducts
                         tr
-                            td= product.productName
+                            td= product.name
                             td= product.quantity + " g"
-                            td= product.nutritionalValues.energy + " kcal"
-                            td= product.nutritionalValues.protein + " g"
-                            td= product.nutritionalValues.carbohydrates + " g"
-                            td= product.nutritionalValues.fat + " g"
+                            td= product.energy + " kcal"
+                            td= product.protein + " g"
+                            td= product.carbohydrates + " g"
+                            td= product.fat + " g"
                     tr
-                        td SUMA
-                        td= allValues.quantity + " g"
-                        td= allValues.energy + " kcal"
-                        td= allValues.protein + " g"
-                        td= allValues.carbohydrates + " g"
-                        td= allValues.fat + " g"
+                        td 
+                            strong SUMA
+                        td
+                            strong= eatenToday.quantity + " g"
+                        td
+                            strong= eatenToday.energy + " kcal"
+                        td
+                            strong= eatenToday.protein + " g"
+                        td
+                            strong= eatenToday.carbohydrates + " g"
+                        td
+                            strong= eatenToday.fat + " g"
     script(src='scripts/products.js' type="text/javascript")
