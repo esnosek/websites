@@ -11,7 +11,7 @@ app.set('views', './views')
 app.use('/scripts', express.static(__dirname + "/scripts"));
 app.use('/styles', express.static(__dirname + "/styles"));
 
-const port = 80;
+const port = 8081;
 const todaysProducts = [];
 const todayToEat = {
     energy: 3340.0,

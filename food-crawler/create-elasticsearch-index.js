@@ -3,7 +3,7 @@ const glob = require("glob");
 var fs = require('fs');
 
 const client = new elasticsearch.Client({
-  host: 'localhost:9200',
+  host: '192.168.33.10:9200',
   log: 'debug'
 });
 

@@ -18,7 +18,6 @@
 .grid-container {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 100% minmax(300px, 100%);
   grid-template-areas:
     'search left right'
     'search main main';

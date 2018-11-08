@@ -1,12 +1,13 @@
 const rp = require('request-promise')
-const request = require('request')
 const accents = require('remove-accents')
-const http = require('http')
 const fs = require('fs')
+const url = require('url')
+const linux = true
+const delimiter = linux ? "/" : "\\"
 
 async function processData(result){
     const name = getName(result["link"])
-    const dataDir = "data" + "\\" + name
+    const dataDir = "data" + delimiter + name
     processedResult = {}
     processedResult["images"] = await downloadImages(result, dataDir)
     processedResult["categoryName"] = result["categoryName"]
@@ -18,7 +19,7 @@ async function processData(result){
 }
 
 async function saveJSON(result, dataDir, name){
-    const fileName = dataDir + "\\" + name + ".json"
+    const fileName = dataDir + delimiter + name + ".json"
     resultJSON = JSON.stringify(result, null, 4)
     fs.writeFile(fileName, resultJSON, function (err) {})
     //console.log(resultJSON)
@@ -55,20 +56,20 @@ async function processInformation(result){
 async function downloadImages(result, dataDir){
     const imgPaths = []
     for(link of result["imagesLinks"])
-        await downloadImage(link, dataDir, getName(link), n => imgPaths.push(n))
+        await downloadImage(link, dataDir, await getName(link), n => imgPaths.push(n))
     return imgPaths
 }
 
 async function downloadImage(url, dataDir, name, cb){
-    const fullPath = dataDir + "\\" + name
+    const fullPath = dataDir + delimiter + name
     if(!fs.existsSync(dataDir)) fs.mkdirSync(dataDir)
     await rp(url, {encoding: 'binary'}, function(error, response, body){
         fs.writeFileSync(fullPath, body, 'binary', function (err) {});
     }).then(() => cb(name))
 }
 
-function getName(url){
-    return new URL(url).pathname.split("/").slice(-1)[0]
+function getName(link){
+    return url.parse(link, true).pathname.split("/").slice(-1)[0]
 }
 
 function normalizeKey(key){

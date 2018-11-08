@@ -3,6 +3,9 @@ const productEventEmitter = require('./event-emiter').productEventEmitter
 const firefox = require('selenium-webdriver/firefox')
 const chrome = require('selenium-webdriver/chrome')
 const fs = require('fs')
+const url = require('url');
+const linux = true
+const delimiter = linux ? "/" : "\\"
 
 async function collectProducts() {
     if(!fs.existsSync("data")) fs.mkdirSync("data")
@@ -14,9 +17,9 @@ async function collectProducts() {
     while(true){
         const productsLinks = await collectProductsOnPage()
         console.log("Processing " + ++i + " page")
-        console.log("Links: ", productsLinks)
+        console.log("Links: ", productsLinks, "\n")
         for(const link of productsLinks) {
-            if(!fs.existsSync("data" + "\\" + await getName(link))){
+            if(!fs.existsSync("data" + delimiter + getName(link))){
                 await openInNewTab(link)
                 await processData(link)
                 await driver.close()
@@ -27,14 +30,14 @@ async function collectProducts() {
         if(!nextPageButton)
             break
         const page = await driver.findElement(By.tagName("html"))
-        await click(nextPageButton)
+        await nextPageButton.click()
         await waitUntilPageLoad(page)
     }
     console.log("Finish collecting data")
 }
 
-async function getName(url){
-    return new URL(url).pathname.split("/").slice(-1)[0]
+function getName(link){
+    return url.parse(link, true).pathname.split("/").slice(-1)[0]
 }
 
 async function clickAcceptButton() {
@@ -66,7 +69,7 @@ async function openInNewTab(link){
 }
 
 async function processData(link){
-    console.log("\nProcessing: " +  link)
+    console.log("Processing: " +  link)
     const result = {}
     result["link"] = link
     result["categoryName"] = await getCategoryName()
@@ -144,7 +147,7 @@ async function click(element){
 try {
     driver = new Builder()
         .forBrowser('firefox')
-        .setFirefoxOptions(new firefox.Options().headless())
+        //.setFirefoxOptions(new firefox.Options().headless())
         .build()
     collectProducts()
 } catch(e) {
