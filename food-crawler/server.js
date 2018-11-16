@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const productRepository = require('./product-repository');
+const foodCalcRepository = require('./food-calc-repository');
 
 const app = express();
 app.use(bodyParser.urlencoded({extended: false}));
@@ -13,6 +14,8 @@ app.use('/styles', express.static(__dirname + "/styles"));
 
 const port = 8081;
 const todaysProducts = [];
+const visibleProducts = [];
+
 const todayToEat = {
     energy: 3340.0,
     protein: 170.0,
@@ -28,9 +31,14 @@ const eatenToday = {
     fat: 0.0
 }
 
+function saveTodaysProduct(){
+    todaysProducts.forEach(p => foodCalcRepository.insertPortion(p))
+}
+
 function addProduct(product, quantity){
+    todaysProducts.push({product_json : product, quantity : quantity, date : new Date(), user : {id : 1}})
     productValues = calculateProductValues(product, quantity);
-    todaysProducts.push(productValues);
+    visibleProducts.push(productValues);
     updateEatenToday(productValues);
     updateTodayToEat(productValues);
 }
@@ -63,18 +71,19 @@ function updateTodayToEat(product){
 
 app.get('/', (req, res) => {
     res.render('index', { 
-        todaysProducts: todaysProducts, 
+        visibleProducts: visibleProducts, 
         foundProducts: [], 
         todayToEat: todayToEat,
         eatenToday: eatenToday
     });
+    console.log(todaysProducts)
 });
 
 app.get('/product', (req, res) => {
     productRepository.search(req.query.query)
         .then(r => {
             res.render('index', { 
-                todaysProducts: todaysProducts, 
+                visibleProducts: visibleProducts, 
                 foundProducts: r.hits.hits.map(h => h._source), 
                 todayToEat: todayToEat,
                 eatenToday: eatenToday
@@ -92,10 +101,10 @@ app.post('/product/search', (req, res) => {
 app.post('/addProduct', (req, res) => {
     productRepository.findByProductName(req.body.productName)
         .then(r => {
-            const product = r.hits.hits[0]._source
-            addProduct(product, parseInt(req.body.quantity))
+            const product_json = r.hits.hits[0]._source
+            addProduct(product_json, parseInt(req.body.quantity))
             res.render('index', { 
-                todaysProducts: todaysProducts, 
+                visibleProducts: visibleProducts, 
                 foundProducts: [], 
                 todayToEat: todayToEat,
                 eatenToday: eatenToday

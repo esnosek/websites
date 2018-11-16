@@ -44,7 +44,7 @@ html
                         td Fat
                         td= eatenToday.fat
             div(class="main")
-                table(id = "todaysProducts", class="table")
+                table(id = "visibleProducts", class="table")
                     tr 
                         th Product
                         th Quantity
@@ -52,7 +52,7 @@ html
                         th Protein
                         th Carbohydrates
                         th Fat
-                    each product in todaysProducts
+                    each product in visibleProducts
                         tr
                             td= product.name
                             td= product.quantity + " g"
