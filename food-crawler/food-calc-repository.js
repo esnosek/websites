@@ -1,10 +1,10 @@
-const mysql = require('mysql');
+const mysql = require('mysql2');
 
 const connection = mysql.createConnection({
     host: "localhost",
     user: "nos",
-    password: "nos",
-    database: "apple_collection"
+    password: "NosNos92@",
+    database: "food_calc"
 });
 
 function getUsersList(callback){
@@ -27,17 +27,42 @@ function insertUser(user){
 }
 
 function insertPortion(portion){
-    var sql = `INSERT INTO portion (user_id, date, product_json, quantity)
+    let productString = JSON.stringify(portion.product_json);
+    var sql = `INSERT INTO portion (user_id, product_json, quantity)
     	VALUES (
             ${portion.user.id}, 
-            "${portion.date}",
-            "${portion.product_json}",
+            '${productString}',
             ${portion.quantity}
         )`;
     connection.query(sql, function (err, result) {
         if (err) throw err;
         console.log(`Portion inserted with id ${result.insertId}.`);
     });   
+}
+
+function mysql_real_escape_string (str) {
+    return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char) {
+        switch (char) {
+            case "\0":
+                return "\\0";
+            case "\x08":
+                return "\\b";
+            case "\x09":
+                return "\\t";
+            case "\x1a":
+                return "\\z";
+            case "\n":
+                return "\\n";
+            case "\r":
+                return "\\r";
+            case "\"":
+            case "'":
+            case "\\":
+            case "%":
+                return "\\"+char; // prepends a backslash to backslash, percent,
+                                  // and double/single quotes
+        }
+    });
 }
 
 function insertUserNeeds(userNeeds){

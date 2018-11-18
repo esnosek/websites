@@ -13,8 +13,8 @@ app.use('/scripts', express.static(__dirname + "/scripts"));
 app.use('/styles', express.static(__dirname + "/styles"));
 
 const port = 8081;
-const todaysProducts = [];
-const visibleProducts = [];
+let todaysProducts = [];
+let visibleProducts = [];
 
 const todayToEat = {
     energy: 3340.0,
@@ -32,7 +32,7 @@ const eatenToday = {
 }
 
 function saveTodaysProduct(){
-    todaysProducts.forEach(p => foodCalcRepository.insertPortion(p))
+    return todaysProducts.forEach(p => foodCalcRepository.insertPortion(p))
 }
 
 function addProduct(product, quantity){
@@ -69,6 +69,13 @@ function updateTodayToEat(product){
     todayToEat.fat = Math.round((todayToEat.fat - productValues.fat) * 100) / 100;
 }
 
+async function addNos(){
+    foodCalcRepository.getUsersList(result => {
+        if (result.length == 0)
+            foodCalcRepository.insertUser({name : "nos"});
+    })
+}
+
 app.get('/', (req, res) => {
     res.render('index', { 
         visibleProducts: visibleProducts, 
@@ -102,6 +109,7 @@ app.post('/addProduct', (req, res) => {
     productRepository.findByProductName(req.body.productName)
         .then(r => {
             const product_json = r.hits.hits[0]._source
+            console.log("PPRPRPRP: " + JSON.stringify(product_json).replace(/\"/g,'\\"'))
             addProduct(product_json, parseInt(req.body.quantity))
             res.render('index', { 
                 visibleProducts: visibleProducts, 
@@ -112,5 +120,12 @@ app.post('/addProduct', (req, res) => {
         });
 });
 
+app.post('/save', (req, res) => {
+    saveTodaysProduct()
+    todaysProducts = [];
+    visibleProducts = [];
+    res.send("Products saved")
+});
 
+addNos()
 app.listen(port, "localhost", () => console.log(`App is listening on port ${port}...`))

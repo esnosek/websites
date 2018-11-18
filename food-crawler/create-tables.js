@@ -1,16 +1,16 @@
-const mysql = require('mysql');
+const mysql = require('mysql2');
 
 const connection = mysql.createConnection({
     host: "localhost",
     user: "nos",
-    password: "nos",
+    password: "NosNos92@",
     database: "food_calc"
 });
 
 async function createUserTable(){
     var sql = `CREATE TABLE user (
         id INT AUTO_INCREMENT PRIMARY KEY, 
-        name VARCHAR(255)
+        name TEXT
     )`;
     connection.query(sql, function (err, result) {
         if (err) throw err;
@@ -23,7 +23,7 @@ async function createPortionTable(){
         id INT AUTO_INCREMENT PRIMARY KEY, 
         date DATE,
         quantity INT,
-        product_json TEXT,
+        product_json JSON,
         user_id INT, FOREIGN KEY fk_user(user_id) REFERENCES user(id) ON UPDATE CASCADE ON DELETE RESTRICT
     )`;
     connection.query(sql, function (err, result) {

@@ -1,9 +1,9 @@
-const mysql = require('mysql');
+const mysql = require('mysql2');
 
 const connection = mysql.createConnection({
     host: "localhost",
     user: "nos",
-    password: "nos"
+    password: "NosNos92@"
 });
 
 async function removeDatabase(databaseName){
