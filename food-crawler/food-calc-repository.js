@@ -26,16 +26,34 @@ function insertUser(user){
     });   
 }
 
-function insertPortion(portion){
-    let productString = JSON.stringify(portion.product_json);
-    var sql = `INSERT INTO portion (user_id, product_json, quantity)
+function findPortion(id, callback){
+    let sql = `SELECT * FROM portion WHERE id='${id}'`
+    connection.query(sql, function (err, result) {
+        if (err) throw err;
+        callback(result);
+    });
+}
+
+function deletePortion(id, callback){
+    let sql = `DELETE FROM portion WHERE id='${id}'`
+    connection.query(sql, function (err, result) {
+        if (err) throw err;
+        callback(result);
+    });
+}
+
+function insertPortion(portion, callback){
+    let productString = JSON.stringify(portion.productJson._source);
+    var sql = `INSERT INTO portion (user_id, product_json, quantity, date)
     	VALUES (
             ${portion.user.id}, 
             '${productString}',
-            ${portion.quantity}
+            ${portion.quantity},
+            '${portion.date}'
         )`;
     connection.query(sql, function (err, result) {
         if (err) throw err;
+        callback(result);
         console.log(`Portion inserted with id ${result.insertId}.`);
     });   
 }
@@ -86,5 +104,7 @@ module.exports = {
     insertUser: insertUser,
     insertPortion: insertPortion,
     insertUserNeeds: insertUserNeeds,
-    getUsersList: getUsersList
+    getUsersList: getUsersList,
+    findPortion: findPortion,
+    deletePortion: deletePortion
 };

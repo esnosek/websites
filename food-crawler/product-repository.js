@@ -39,7 +39,15 @@ async function findByProductName(name){
     })
 }
 
+async function findById(id){
+    return await client.get({
+        index: 'food-index',
+        type: 'product',
+        id: id
+      });
+}
 module.exports = {
     search: search,
-    findByProductName: findByProductName
+    findByProductName: findByProductName,
+    findById: findById
 };

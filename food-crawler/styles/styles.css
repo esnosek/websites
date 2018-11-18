@@ -1,4 +1,3 @@
-
 .search { 
   grid-area: search; 
 }
@@ -13,6 +12,10 @@
 
 .main { 
   grid-area: main;
+}
+
+.quantity {
+  resize: none;
 }
 
 .grid-container {

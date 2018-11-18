@@ -44,7 +44,7 @@ html
                         td Fat
                         td= eatenToday.fat
             div(class="main")
-                table(id = "visibleProducts", class="table")
+                table(id="visiblePortions", class="table")
                     tr 
                         th Product
                         th Quantity
@@ -52,14 +52,19 @@ html
                         th Protein
                         th Carbohydrates
                         th Fat
-                    each product in visibleProducts
+                        th 
+                    each portion in visiblePortions
                         tr
-                            td= product.name
-                            td= product.quantity + " g"
-                            td= product.energy + " kcal"
-                            td= product.protein + " g"
-                            td= product.carbohydrates + " g"
-                            td= product.fat + " g"
+                            td= portion.name
+                            td
+                                input(size="2", maxlength="4", value=portion.quantity)
+                                =" g"
+                            td= portion.energy + " kcal"
+                            td= portion.protein + " g"
+                            td= portion.carbohydrates + " g"
+                            td= portion.fat + " g"
+                            td
+                                button(onclick="removePortion(\"" + portion.productId + "\",this)") remove
                     tr
                         td 
                             strong SUMA
@@ -73,7 +78,8 @@ html
                             strong= eatenToday.carbohydrates + " g"
                         td
                             strong= eatenToday.fat + " g"
+                        td
                 button(id="save" onclick="savePortions()") Zapisz
 
     script(src='scripts/products.js' type="text/javascript")
-    script(src='scripts/save_portions.js' type="text/javascript")
+    script(src='scripts/portions.js' type="text/javascript")

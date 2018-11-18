@@ -6,16 +6,16 @@ function addProduct(element) {
     http.onload = function() {
         if (this.status == 200) {
             document.getElementById("products").innerHTML = "";
-            const json = JSON.parse(http.responseText);
+            const productJson = JSON.parse(http.responseText);
             const table = document.getElementById("productInfoTable");
             const caption = document.createElement("caption");
-            const captionText = document.createTextNode(json.productName);
+            const captionText = document.createTextNode(productJson._source.productName);
             caption.appendChild(captionText);
             table.appendChild(caption)
-            for(let p in json.nutritionalValues){
+            for(let p in productJson._source.nutritionalValues){
                 const tr = document.createElement("tr");
                 const key = document.createTextNode(p)
-                const value = document.createTextNode(json.nutritionalValues[p])
+                const value = document.createTextNode(productJson._source.nutritionalValues[p])
                 const tdKey = document.createElement("td");
                 const tdValue = document.createElement("td");
                 tdKey.appendChild(key);
@@ -44,8 +44,8 @@ function addProduct(element) {
 
             const hiddenInput = document.createElement("input");
             hiddenInput.setAttribute("type", "hidden");
-            hiddenInput.setAttribute("name", "productName");
-            hiddenInput.setAttribute("value", json.productName);
+            hiddenInput.setAttribute("name", "productId");
+            hiddenInput.setAttribute("value", productJson._id);
 
             form.appendChild(textInput);
             form.appendChild(button);
@@ -54,5 +54,5 @@ function addProduct(element) {
             document.getElementById("productInfo").appendChild(form);
        }
     };
-    http.send(JSON.stringify({productName : element.innerText, quantity : 100}));
+    http.send(JSON.stringify({productName : element.innerText}));
 }
