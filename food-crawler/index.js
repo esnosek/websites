@@ -1,8 +1,12 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const productRepository = require('./product-repository');
-const foodCalcRepository = require('./food-calc-repository');
 const dateformat = require('dateformat');
+
+const productRepository = require('./db/products/product-repository');
+const foodCalcRepository = require('./db/food-calc/food-calc-repository');
+const config = require('./config/config.js').config;
+
+process.env.NODE_ENV = 'dev';
 
 const app = express();
 app.use(bodyParser.urlencoded({extended: false}));
@@ -13,7 +17,6 @@ app.set('views', './views')
 app.use('/scripts', express.static(__dirname + "/scripts"));
 app.use('/styles', express.static(__dirname + "/styles"));
 
-const port = 8080;
 let todaysPortions = [];
 
 const todayToEat = {
@@ -38,23 +41,23 @@ function saveTodaysPortions(){
         }));
 }
 
+function updatePortion(productId, quantity){
+    console.log(productId, " : ",quantity)
+    todaysPortions.find(p => p.productJson._id == productId).quantity = quantity
+    // TODO change value of visible row
+    }
+
 function removePortionByProductId(productId){
     let curProduct = todaysPortions.find(p => p.productJson._id == productId)
     let index = todaysPortions.indexOf(curProduct);
     todaysPortions.splice(index, 1);
-    // TODO remove from db
+    if(curProduct.id != null)
+        foodCalcRepository.deletePortion(curProduct.id, r => console.log(r))
 }
 
-function removePortion(portionId){
-    let curProduct = todaysPortions.find(p => p.id == portionId)
-    let index = todaysPortions.indexOf(curProduct);
-    todaysPortions.splice(index, 1);
-}
-
-function addPortion(productJson, quantity){
+function addTodaysPortion(productJson, quantity){
     let now = dateformat(new Date(), "yyyy-mm-dd")
     todaysPortions.push({id : null, productJson : productJson, quantity : quantity, date : now, user : {id : 1}})
-    productValues = calculateProductValues(productJson, quantity);
 }
 
 function calculateProductValues(productJson, quantity){
@@ -86,15 +89,22 @@ function updateTodayToEat(product){
 }
 
 async function addNos(){
-    foodCalcRepository.getUsersList(result => {
-        if (result.length == 0)
+    foodCalcRepository.getUsersList(r => {
+        if (r.length == 0)
+            foodCalcRepository.insertUser({name : "nos"});
+    })
+}
+
+async function addNosNeeds(){
+    foodCalcRepository.getUsersList(r => {
+        if (r.length == 0)
             foodCalcRepository.insertUser({name : "nos"});
     })
 }
 
 app.get('/', (req, res) => {
     res.render('index', { 
-        visibleProducts: todaysPortions.map(p => calculateProductValues(p.productJson, p.quantity)), 
+        visiblePortions: todaysPortions.map(p => calculateProductValues(p.productJson, p.quantity)), 
         foundProducts: [], 
         todayToEat: todayToEat,
         eatenToday: eatenToday
@@ -106,7 +116,7 @@ app.get('/product', (req, res) => {
     productRepository.search(req.query.query)
         .then(r => {
             res.render('index', { 
-                visibleProducts: todaysPortions.map(p => calculateProductValues(p.productJson, p.quantity)), 
+                visiblePortions: todaysPortions.map(p => calculateProductValues(p.productJson, p.quantity)), 
                 foundProducts: r.hits.hits.map(h => h._source), 
                 todayToEat: todayToEat,
                 eatenToday: eatenToday
@@ -122,9 +132,9 @@ app.post('/product/search', (req, res) => {
 app.post('/addProduct', (req, res) => {
     productRepository.findById(req.body.productId)
         .then(r => {
-            addPortion(r, parseInt(req.body.quantity))
+            addTodaysPortion(r, parseInt(req.body.quantity))
             res.render('index', { 
-                visibleProducts: todaysPortions.map(p => calculateProductValues(p.productJson, p.quantity)), 
+                visiblePortions: todaysPortions.map(p => calculateProductValues(p.productJson, p.quantity)), 
                 foundProducts: [], 
                 todayToEat: todayToEat,
                 eatenToday: eatenToday
@@ -134,26 +144,21 @@ app.post('/addProduct', (req, res) => {
 
 app.post('/portion', (req, res) => {
     saveTodaysPortions()
-    res.send("Products saved")
+    res.send("Portions saved")
 });
 
-app.post('/quantity', (req, res) => {
-    let productName = req.body.name
-    todaysPortions.find(p => p.productJson.productName == "req.body.name").quantity = req.body.quantity
-    res.send("Products saved")
+app.patch('/portion', (req, res) => {
+    updatePortion(req.body.productId, req.body.quantity)
+    res.send(`Portion with product ${req.body.productId} updated`)
 });
 
-app.post('/remove', (req, res) => {
+app.delete('/portion', (req, res) => {
     removePortionByProductId(req.body.productId)
-    res.send("Product removed")
+    res.send(`Portion with product ${req.body.productId} removed`)
 });
-
-async function test(){
-    console.log(await productRepository.findById("QzOVtmYBxlpUyraYyDpa"))
-}
 
 
 addNos()
-test()
+addNosNeeds()
 
-app.listen(port, "localhost", () => console.log(`App is listening on port ${port}...`))
+app.listen(config.node_port, config.node_host, () => console.log(`App is listening on port ${config.node_port}...`))

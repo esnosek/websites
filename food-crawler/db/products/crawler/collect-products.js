@@ -1,9 +1,10 @@
+const fs = require('fs')
+const url = require('url')
 const { Builder, By, Key, promise, until } = require('selenium-webdriver')
 const productEventEmitter = require('./event-emiter').productEventEmitter
 const firefox = require('selenium-webdriver/firefox')
 const chrome = require('selenium-webdriver/chrome')
-const fs = require('fs')
-const url = require('url');
+
 const linux = true
 const delimiter = linux ? "/" : "\\"
 

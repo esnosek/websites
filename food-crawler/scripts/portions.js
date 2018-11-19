@@ -6,14 +6,6 @@ function savePortions() {
     http.send();
 }
 
-function changeQuantity(element) {
-    const http = new XMLHttpRequest();
-    http.open("POST", 'quantity');
-    http.responseType = "text";
-    http.setRequestHeader("Content-Type", "application/json");
-    http.send(JSON.stringify({name : element.innerText, quantity : 100}));
-}
-
 function removePortion(productId, element) {
     const http = new XMLHttpRequest();
     http.open("DELETE", 'portion');
@@ -24,4 +16,12 @@ function removePortion(productId, element) {
             element.parentNode.parentNode.remove()
     };
     http.send(JSON.stringify({productId : productId}));
+}
+
+function updatePortionQuantity(productId, element) {
+    const http = new XMLHttpRequest();
+    http.open("PATCH", 'portion');
+    http.responseType = "text";
+    http.setRequestHeader("Content-Type", "application/json");
+    http.send(JSON.stringify({productId : productId, quantity : element.value}));
 }

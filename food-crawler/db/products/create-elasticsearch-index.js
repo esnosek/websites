@@ -2,9 +2,11 @@ const elasticsearch = require('elasticsearch');
 const glob = require("glob");
 var fs = require('fs');
 
+const config = require('../../config/config.js').config;
+
 const client = new elasticsearch.Client({
-  host: '192.168.33.11:9200',
-  log: 'debug'
+  host: config.elasticsearch.host,
+  log: config.elasticsearch.log
 });
 
 async function createIndexAndInsertData(){

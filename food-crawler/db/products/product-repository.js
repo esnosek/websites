@@ -1,8 +1,10 @@
 const elasticsearch = require('elasticsearch');
 
+const config = require('../../config/config.js').config;
+
 const client = new elasticsearch.Client({
-  host: '192.168.33.11:9200',
-  log: 'debug'
+  host: config.elasticsearch.host,
+  log: config.elasticsearch.log
 });
 
 
@@ -46,6 +48,7 @@ async function findById(id){
         id: id
       });
 }
+
 module.exports = {
     search: search,
     findByProductName: findByProductName,

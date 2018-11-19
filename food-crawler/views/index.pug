@@ -57,7 +57,7 @@ html
                         tr
                             td= portion.name
                             td
-                                input(size="2", maxlength="4", value=portion.quantity)
+                                input(size="2", maxlength="4", value=portion.quantity, onchange="updatePortionQuantity(\"" + portion.productId + "\",this)")
                                 =" g"
                             td= portion.energy + " kcal"
                             td= portion.protein + " g"

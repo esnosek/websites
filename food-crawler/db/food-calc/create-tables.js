@@ -1,9 +1,11 @@
 const mysql = require('mysql2');
 
+const config = require('../../config/config.js').config;
+
 const connection = mysql.createConnection({
-    host: "localhost",
-    user: "nos",
-    password: "NosNos92@",
+    host: config.mysql.host,
+    user: config.mysql.user,
+    password: config.mysql.password,
     database: "food_calc"
 });
 
