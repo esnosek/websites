@@ -12,6 +12,7 @@ function addProduct(element) {
             const captionText = document.createTextNode(productJson._source.productName);
             caption.appendChild(captionText);
             table.appendChild(caption)
+            
             for(let p in productJson._source.nutritionalValues){
                 const tr = document.createElement("tr");
                 const key = document.createTextNode(p)

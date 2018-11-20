@@ -43,8 +43,10 @@ function saveTodaysPortions(){
 
 function updatePortion(productId, quantity){
     console.log(productId, " : ",quantity)
-    todaysPortions.find(p => p.productJson._id == productId).quantity = quantity
-    // TODO change value of visible row
+    let curProduct = todaysPortions.find(p => p.productJson._id == productId)
+    curProduct.quantity = quantity
+    if(curProduct.id != null)
+        foodCalcRepository.updatePortionQuantity(curProduct.id, quantity, r => console.log(r))
     }
 
 function removePortionByProductId(productId){

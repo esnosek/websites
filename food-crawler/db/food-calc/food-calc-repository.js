@@ -20,7 +20,7 @@ function getUsersList(callback){
 function insertUser(user){
     var sql = `INSERT INTO user (name)
     	VALUES (
-            "${user.name}"
+            '${user.name}'
         )`;
     connection.query(sql, function (err, result) {
         if (err) throw err;
@@ -30,6 +30,14 @@ function insertUser(user){
 
 function findPortion(id, callback){
     let sql = `SELECT * FROM portion WHERE id='${id}'`
+    connection.query(sql, function (err, result) {
+        if (err) throw err;
+        callback(result);
+    });
+}
+
+function updatePortionQuantity(id, quantity, callback){
+    let sql = `UPDATE portion SET quantity = '${quantity}' WHERE id = '${id}'`
     connection.query(sql, function (err, result) {
         if (err) throw err;
         callback(result);
@@ -108,5 +116,6 @@ module.exports = {
     insertUserNeeds: insertUserNeeds,
     getUsersList: getUsersList,
     findPortion: findPortion,
-    deletePortion: deletePortion
+    deletePortion: deletePortion,
+    updatePortionQuantity : updatePortionQuantity
 };

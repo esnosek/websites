@@ -55,15 +55,15 @@ html
                         th 
                     each portion in visiblePortions
                         tr
-                            td= portion.name
-                            td
+                            td(class="productName")= portion.name
+                            td(class="quantity")
                                 input(size="2", maxlength="4", value=portion.quantity, onchange="updatePortionQuantity(\"" + portion.productId + "\",this)")
                                 =" g"
-                            td= portion.energy + " kcal"
-                            td= portion.protein + " g"
-                            td= portion.carbohydrates + " g"
-                            td= portion.fat + " g"
-                            td
+                            td(class="energy")= portion.energy + " kcal"
+                            td(class="protein")= portion.protein + " g"
+                            td(class="carbohydrates")= portion.carbohydrates + " g"
+                            td(class="fat")= portion.fat + " g"
+                            td(class="removeButton")
                                 button(onclick="removePortion(\"" + portion.productId + "\",this)") remove
                     tr
                         td 
