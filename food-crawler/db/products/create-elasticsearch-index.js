@@ -22,7 +22,7 @@ async function createIndex(){
 }
 
 function addProducts(){
-  glob("data/**/*.json", {matchBase:true}, (err, res) => {
+  glob("../../data/**/*.json", {matchBase:true}, (err, res) => {
     if (err) throw err;
     addAll(res)
   });
@@ -31,8 +31,9 @@ function addProducts(){
 function addAll(files){
   const data = []
   files.forEach(f => {
-    data.push({ index:  { _index: 'food-index', _type: 'product'} });
-    data.push(JSON.parse(fs.readFileSync(f, 'utf8')))
+    let json = JSON.parse(fs.readFileSync(f, 'utf8'))
+    data.push({ index:  { _index: 'food-index', _type: 'product', _id: json.id} });
+    data.push(json)
   });
   client.bulk({
     body : JSON.parse(JSON.stringify(data))

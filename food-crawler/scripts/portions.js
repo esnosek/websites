@@ -23,11 +23,5 @@ function updatePortionQuantity(productId, element) {
     http.open("PATCH", 'portion');
     http.responseType = "text";
     http.setRequestHeader("Content-Type", "application/json");
-    http.onload = function() {
-        if (this.status == 200)
-            let tr = element.parentNode.parentNode
-            tr.getElementsByClassName("energy")[0]
-            energy.value = e
-    };
     http.send(JSON.stringify({productId : productId, quantity : element.value}));
 }

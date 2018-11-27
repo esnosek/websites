@@ -6,16 +6,17 @@ const linux = true
 const delimiter = linux ? "/" : "\\"
 
 async function processData(result){
-    const name = getName(result["link"])
-    const dataDir = "data" + delimiter + name
+    const id = getName(result["link"])
+    const dataDir = "data" + delimiter + id
     processedResult = {}
+    processedResult["id"] = id
     processedResult["images"] = await downloadImages(result, dataDir)
     processedResult["categoryName"] = result["categoryName"]
     processedResult["productName"] = result["productName"]
     processedResult["nutritionalValues"] = await processNutritionalValues100g(result)
     processedResult["nutritionalValuesPhoto"] = await processNutritionalValuesPhoto(result)
     processedResult["information"] = await processInformation(result)
-    saveJSON(processedResult, dataDir, name)
+    saveJSON(processedResult, dataDir, id)
 }
 
 async function saveJSON(result, dataDir, name){
@@ -55,8 +56,11 @@ async function processInformation(result){
 
 async function downloadImages(result, dataDir){
     const imgPaths = []
-    for(link of result["imagesLinks"])
-        await downloadImage(link, dataDir, await getName(link), n => imgPaths.push(n))
+    for(it in result["imagesLinks"]){
+        let link = result["imagesLinks"][it]
+        let name = it == 0 ? "main-" + await getName(link) : await getName(link)
+        await downloadImage(link, dataDir, name, n => imgPaths.push(n))
+    }
     return imgPaths
 }
 

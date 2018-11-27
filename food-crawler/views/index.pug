@@ -10,7 +10,10 @@ html
                     button(id="submit" type="submit")= "Search"
                 div(id='products', class="flex-container")
                     each product in foundProducts
-                        div(onclick="addProduct(this)")= product.productName
+                        div(class="container")
+                            - var img = "data/" + product.id + "/" + product.images[0]
+                            img(id=product.productName, src=img,  onclick="addProduct(this)")
+                            div(class="bottom-left")= product.productName
                 div(id="productInfo")
                     table(id='productInfoTable', class="table")
             div(class="left")

@@ -59,19 +59,29 @@
   color: white;
 }
 
+.container {
+  font-size: 11px;
+  position: relative;
+  text-align: center;
+  color: white;
+}
+
+.container > img {
+  width: 100px;
+  height: 100px;
+  margin: 10px;
+}
+
+.bottom-left {
+  position: absolute;
+  bottom: 2px;
+  left: 4px;
+}
+
 .flex-container {
   align-items: flex-start;
   justify-content: space-around;
   display: flex;
   flex-wrap: wrap;
   background-color: #265B6A;
-}
-
-.flex-container > div {
-  background-color: #f1f1f1;
-  width: 100px;
-  height: 100px;
-  margin: 10px;
-  text-align: center;
-  font-size: 15px;
 }

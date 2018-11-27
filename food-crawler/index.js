@@ -16,6 +16,7 @@ app.set('views', './views')
 
 app.use('/scripts', express.static(__dirname + "/scripts"));
 app.use('/styles', express.static(__dirname + "/styles"));
+app.use('/data', express.static(__dirname + "/data"));
 
 let todaysPortions = [];
 
@@ -36,9 +37,7 @@ const eatenToday = {
 
 function saveTodaysPortions(){
     todaysPortions.filter(p => null == p.id)
-        .forEach(p => foodCalcRepository.insertPortion(p, r => {
-            p.id = r.insertId; 
-        }));
+        .forEach(p => foodCalcRepository.insertPortion(p, r => p.id = r.insertId));
 }
 
 function updatePortion(productId, quantity){
@@ -115,17 +114,23 @@ app.get('/', (req, res) => {
 });
 
 app.get('/product', (req, res) => {
+    console.log("WYSZUKUJE PO NAZWIE")
     productRepository.search(req.query.query)
         .then(r => {
+            let source = r.hits.hits.map(h => h._source)
+            console.log(source)
             res.render('index', { 
                 visiblePortions: todaysPortions.map(p => calculateProductValues(p.productJson, p.quantity)), 
-                foundProducts: r.hits.hits.map(h => h._source), 
+                foundProducts: source,
                 todayToEat: todayToEat,
-                eatenToday: eatenToday
+                eatenToday: eatenToday,
             });
         });
 });
 
+async function createSource(r){
+    return Promise.all(r.hits.hits.map(h => h._source))
+}
 app.post('/product/search', (req, res) => {
     productRepository.findByProductName(req.body.productName)
         .then(r => res.send(r.hits.hits[0]));
@@ -139,7 +144,7 @@ app.post('/addProduct', (req, res) => {
                 visiblePortions: todaysPortions.map(p => calculateProductValues(p.productJson, p.quantity)), 
                 foundProducts: [], 
                 todayToEat: todayToEat,
-                eatenToday: eatenToday
+                eatenToday: eatenToday,
             });
         });
 });

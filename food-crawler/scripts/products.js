@@ -28,7 +28,8 @@ function addProduct(element) {
 
             const form = document.createElement("form");
             form.setAttribute("method", "POST");
-            form.setAttribute("action", "addProduct");
+            //form.setAttribute("action", "addProduct");
+            form.setAttribute("onsubmit", "return someFunction(this);");
             form.setAttribute("enctype", "application/json");
 
             const textInput = document.createElement("input");
@@ -44,6 +45,7 @@ function addProduct(element) {
             button.appendChild(addProductText);
 
             const hiddenInput = document.createElement("input");
+            hiddenInput.setAttribute("id", "productId");
             hiddenInput.setAttribute("type", "hidden");
             hiddenInput.setAttribute("name", "productId");
             hiddenInput.setAttribute("value", productJson._id);
@@ -53,7 +55,27 @@ function addProduct(element) {
             form.appendChild(hiddenInput);
 
             document.getElementById("productInfo").appendChild(form);
+            return false;
        }
     };
-    http.send(JSON.stringify({productName : element.innerText}));
+    console.log(element.id)
+    http.send(JSON.stringify({productName : element.id}));
+}
+
+function someFunction(element) {
+    console.log("in some function")
+    const http = new XMLHttpRequest();
+    http.open("POST", 'addProduct');
+    http.responseType = "text";
+    http.setRequestHeader("Content-Type", "application/json");
+    let id = document.getElementById("productId").value;
+    let quantity = document.getElementById("quantity").value;
+    http.onload = function() {
+        if (this.status == 200) {
+            document.location.replace("/")
+        }
+    }
+    http.send(JSON.stringify({productId : id, quantity : quantity}));
+    console.log("in some function2");
+    return false;
 }
