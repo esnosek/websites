@@ -17,6 +17,14 @@ function getUsersList(callback){
     });    
 }
 
+function getUsersNeedsList(callback){
+    var sql = `SELECT * FROM user_needs`;
+    connection.query(sql, function (err, result, fields) {
+        if (err) throw err;
+        callback(result);
+    });    
+}
+
 function insertUser(user){
     var sql = `INSERT INTO user (name)
     	VALUES (
@@ -68,45 +76,27 @@ function insertPortion(portion, callback){
     });   
 }
 
-function mysql_real_escape_string (str) {
-    return str.replace(/[\0\x08\x09\x1a\n\r"'\\\%]/g, function (char) {
-        switch (char) {
-            case "\0":
-                return "\\0";
-            case "\x08":
-                return "\\b";
-            case "\x09":
-                return "\\t";
-            case "\x1a":
-                return "\\z";
-            case "\n":
-                return "\\n";
-            case "\r":
-                return "\\r";
-            case "\"":
-            case "'":
-            case "\\":
-            case "%":
-                return "\\"+char; // prepends a backslash to backslash, percent,
-                                  // and double/single quotes
-        }
-    });
-}
-
 function insertUserNeeds(userNeeds){
-    var sql = `INSERT INTO user_needs (user_id, energy, protein, fat, carbohydrates, start_date, end_date)
+    var sql = `INSERT INTO user_needs (user_id, energy, protein, fat, carbohydrates, start_date)
     VALUES (
         ${userNeeds.user.id},
         ${userNeeds.energy},
         ${userNeeds.protein},
         ${userNeeds.fat},
         ${userNeeds.carbohydrates},
-        "${userNeeds.start_date}",
-        "${userNeeds.end_date}"
+        '${userNeeds.startDate}'
     )`;
     connection.query(sql, function (err, result) {
         if (err) throw err;
         console.log(`UserNeed inserted with id ${result.insertId}.`);
+    });   	
+}
+
+async function getUserNeedsValues(userId, callback){
+    var sql = `SELECT energy, protein, fat, carbohydrates FROM user_needs WHERE user_id = ${userId}`;
+    connection.query(sql, function (err, result) {
+        if (err) throw err;
+        callback(result);
     });   	
 }
 
@@ -117,5 +107,7 @@ module.exports = {
     getUsersList: getUsersList,
     findPortion: findPortion,
     deletePortion: deletePortion,
-    updatePortionQuantity : updatePortionQuantity
+    updatePortionQuantity : updatePortionQuantity,
+    getUsersNeedsList : getUsersNeedsList,
+    getUserNeedsValues : getUserNeedsValues
 };

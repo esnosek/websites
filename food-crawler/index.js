@@ -20,19 +20,11 @@ app.use('/data', express.static(__dirname + "/data"));
 
 let todaysPortions = [];
 
-const todayToEat = {
-    energy: 3340.0,
-    protein: 170.0,
-    carbohydrates: 530.0,
-    fat: 60.0
-}
+const todayToEat = getTodaysNeed()
 
-const eatenToday = {
-    quantity: 0,
-    energy: 0.0,
-    protein: 0.0,
-    carbohydrates: 0.0,
-    fat: 0.0
+async function getTodaysNeed(){
+    let need = await foodCalcRepository.getUserNeedsValues(1, r => r)
+    console.log(need)
 }
 
 function saveTodaysPortions(){
@@ -89,20 +81,6 @@ function updateTodayToEat(product){
     todayToEat.fat = Math.round((todayToEat.fat - productValues.fat) * 100) / 100;
 }
 
-async function addNos(){
-    foodCalcRepository.getUsersList(r => {
-        if (r.length == 0)
-            foodCalcRepository.insertUser({name : "nos"});
-    })
-}
-
-async function addNosNeeds(){
-    foodCalcRepository.getUsersList(r => {
-        if (r.length == 0)
-            foodCalcRepository.insertUser({name : "nos"});
-    })
-}
-
 app.get('/', (req, res) => {
     res.render('index', { 
         visiblePortions: todaysPortions.map(p => calculateProductValues(p.productJson, p.quantity)), 
@@ -117,20 +95,15 @@ app.get('/product', (req, res) => {
     console.log("WYSZUKUJE PO NAZWIE")
     productRepository.search(req.query.query)
         .then(r => {
-            let source = r.hits.hits.map(h => h._source)
-            console.log(source)
             res.render('index', { 
                 visiblePortions: todaysPortions.map(p => calculateProductValues(p.productJson, p.quantity)), 
-                foundProducts: source,
+                foundProducts: r.hits.hits.map(h => h._source),
                 todayToEat: todayToEat,
                 eatenToday: eatenToday,
             });
         });
 });
 
-async function createSource(r){
-    return Promise.all(r.hits.hits.map(h => h._source))
-}
 app.post('/product/search', (req, res) => {
     productRepository.findByProductName(req.body.productName)
         .then(r => res.send(r.hits.hits[0]));
@@ -164,7 +137,26 @@ app.delete('/portion', (req, res) => {
     res.send(`Portion with product ${req.body.productId} removed`)
 });
 
+async function addNos(){
+    foodCalcRepository.getUsersList(r => {
+        if (r.length == 0)
+            foodCalcRepository.insertUser({name : "nos"});
+    })
+}
 
+async function addNosNeeds(){
+    foodCalcRepository.getUsersNeedsList(r => {
+        if (r.length == 0)
+            foodCalcRepository.insertUserNeeds({
+                user : {id : 1},
+                energy : 3340,
+                protein : 170,
+                carbohydrates : 530,
+                fat : 60,
+                startDate : dateformat(new Date(), "yyyy-mm-dd")
+            });
+    })
+}
 addNos()
 addNosNeeds()
 
