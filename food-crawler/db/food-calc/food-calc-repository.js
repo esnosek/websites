@@ -9,58 +9,59 @@ const connection = mysql.createConnection({
     database: "food_calc"
 });
 
-function getUsersList(callback){
+function getUsersList(cb){
     var sql = `SELECT * FROM user`;
     connection.query(sql, function (err, result, fields) {
         if (err) throw err;
-        callback(result);
+        cb(result);
     });    
 }
 
-function getUsersNeedsList(callback){
+function getUsersNeedsList(cb){
     var sql = `SELECT * FROM user_needs`;
     connection.query(sql, function (err, result, fields) {
         if (err) throw err;
-        callback(result);
+        cb(result);
     });    
 }
 
-function insertUser(user){
+function insertUser(user, cb){
     var sql = `INSERT INTO user (name)
     	VALUES (
             '${user.name}'
         )`;
     connection.query(sql, function (err, result) {
         if (err) throw err;
+        cb(result);
         console.log(`User ${user.name} inserted with id ${result.insertId}.`);
     });   
 }
 
-function findPortion(id, callback){
+function findPortion(id, cb){
     let sql = `SELECT * FROM portion WHERE id='${id}'`
     connection.query(sql, function (err, result) {
         if (err) throw err;
-        callback(result);
+        cb(result);
     });
 }
 
-function updatePortionQuantity(id, quantity, callback){
+function updatePortionQuantity(id, quantity, cb){
     let sql = `UPDATE portion SET quantity = '${quantity}' WHERE id = '${id}'`
     connection.query(sql, function (err, result) {
         if (err) throw err;
-        callback(result);
+        cb(result);
     });
 }
 
-function deletePortion(id, callback){
+function deletePortion(id, cb){
     let sql = `DELETE FROM portion WHERE id='${id}'`
     connection.query(sql, function (err, result) {
         if (err) throw err;
-        callback(result);
+        cb(result);
     });
 }
 
-function insertPortion(portion, callback){
+function insertPortion(portion, cb){
     let productString = JSON.stringify(portion.productJson._source);
     var sql = `INSERT INTO portion (user_id, product_json, quantity, date)
     	VALUES (
@@ -71,12 +72,12 @@ function insertPortion(portion, callback){
         )`;
     connection.query(sql, function (err, result) {
         if (err) throw err;
-        callback(result);
+        cb(result);
         console.log(`Portion inserted with id ${result.insertId}.`);
     });   
 }
 
-function insertUserNeeds(userNeeds){
+function insertUserNeeds(userNeeds, cb){
     var sql = `INSERT INTO user_needs (user_id, energy, protein, fat, carbohydrates, start_date)
     VALUES (
         ${userNeeds.user.id},
@@ -88,15 +89,15 @@ function insertUserNeeds(userNeeds){
     )`;
     connection.query(sql, function (err, result) {
         if (err) throw err;
-        console.log(`UserNeed inserted with id ${result.insertId}.`);
+        cb(result);
     });   	
 }
 
-async function getUserNeedsValues(userId, callback){
+async function getUserNeedsValues(userId, cb){
     var sql = `SELECT energy, protein, fat, carbohydrates FROM user_needs WHERE user_id = ${userId}`;
     connection.query(sql, function (err, result) {
         if (err) throw err;
-        callback(result);
+        cb(result);
     });   	
 }
 

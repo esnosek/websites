@@ -20,24 +20,41 @@ app.use('/data', express.static(__dirname + "/data"));
 
 let todaysPortions = [];
 
-const todayToEat = getTodaysNeed()
-
-async function getTodaysNeed(){
-    let need = await foodCalcRepository.getUserNeedsValues(1, r => r)
-    console.log(need)
-}
+let eatenToday;
+let todaysNeed;
 
 function saveTodaysPortions(){
     todaysPortions.filter(p => null == p.id)
-        .forEach(p => foodCalcRepository.insertPortion(p, r => p.id = r.insertId));
+        .forEach(p => foodCalcRepository.insertPortion(p, r => {
+            p.id = r.insertId;
+            console.log(`Portion inserted with id ${result.insertId}.`);
+        }));
+}
+
+function addTodaysPortion(productJson, quantity){
+    let now = dateformat(new Date(), "yyyy-mm-dd")
+    todaysPortions.push({
+        id : null, 
+        productJson : productJson, 
+        quantity : quantity, 
+        date : now,
+        user : { id : 1 }
+    })
+}
+
+function row(){
+
 }
 
 function updatePortion(productId, quantity){
     console.log(productId, " : ",quantity)
-    let curProduct = todaysPortions.find(p => p.productJson._id == productId)
-    curProduct.quantity = quantity
-    if(curProduct.id != null)
-        foodCalcRepository.updatePortionQuantity(curProduct.id, quantity, r => console.log(r))
+    let portion = todaysPortions.find(p => p.productJson._id == productId)
+    portion.quantity = quantity
+    if(portion.id != null)
+        foodCalcRepository.updatePortionQuantity(curProduct.id, quantity, r => {
+            console.log(`Portion updated ${r}.`);
+        })
+    return portion
     }
 
 function removePortionByProductId(productId){
@@ -45,15 +62,12 @@ function removePortionByProductId(productId){
     let index = todaysPortions.indexOf(curProduct);
     todaysPortions.splice(index, 1);
     if(curProduct.id != null)
-        foodCalcRepository.deletePortion(curProduct.id, r => console.log(r))
+        foodCalcRepository.deletePortion(curProduct.id, r => {
+            console.log(`Portion removed ${r}.`);
+        })
 }
 
-function addTodaysPortion(productJson, quantity){
-    let now = dateformat(new Date(), "yyyy-mm-dd")
-    todaysPortions.push({id : null, productJson : productJson, quantity : quantity, date : now, user : {id : 1}})
-}
-
-function calculateProductValues(productJson, quantity){
+function calculatePortionValues(productJson, quantity){
     const product = productJson._source
     return {
         productId : productJson._id,
@@ -74,18 +88,18 @@ function updateEatenToday(product){
     eatenToday.fat = Math.round((eatenToday.fat + productValues.fat) * 100) / 100;
 }
 
-function updateTodayToEat(product){
-    todayToEat.energy = Math.round((todayToEat.energy - productValues.energy) * 100) / 100;
-    todayToEat.protein = Math.round((todayToEat.protein - productValues.protein) * 100) / 100;
-    todayToEat.carbohydrates = Math.round((todayToEat.carbohydrates - productValues.carbohydrates) * 100) / 100;
-    todayToEat.fat = Math.round((todayToEat.fat - productValues.fat) * 100) / 100;
+function updateTodaysNeed(product){
+    todaysNeed.energy = Math.round((todaysNeed.energy - productValues.energy) * 100) / 100;
+    todaysNeed.protein = Math.round((todaysNeed.protein - productValues.protein) * 100) / 100;
+    todaysNeed.carbohydrates = Math.round((todaysNeed.carbohydrates - productValues.carbohydrates) * 100) / 100;
+    todaysNeed.fat = Math.round((todaysNeed.fat - productValues.fat) * 100) / 100;
 }
 
 app.get('/', (req, res) => {
     res.render('index', { 
-        visiblePortions: todaysPortions.map(p => calculateProductValues(p.productJson, p.quantity)), 
+        todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
         foundProducts: [], 
-        todayToEat: todayToEat,
+        todaysNeed: todaysNeed,
         eatenToday: eatenToday
     });
     console.log(todaysPortions)
@@ -96,9 +110,9 @@ app.get('/product', (req, res) => {
     productRepository.search(req.query.query)
         .then(r => {
             res.render('index', { 
-                visiblePortions: todaysPortions.map(p => calculateProductValues(p.productJson, p.quantity)), 
+                todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
                 foundProducts: r.hits.hits.map(h => h._source),
-                todayToEat: todayToEat,
+                todaysNeed: todaysNeed,
                 eatenToday: eatenToday,
             });
         });
@@ -114,9 +128,9 @@ app.post('/addProduct', (req, res) => {
         .then(r => {
             addTodaysPortion(r, parseInt(req.body.quantity))
             res.render('index', { 
-                visiblePortions: todaysPortions.map(p => calculateProductValues(p.productJson, p.quantity)), 
+                todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
                 foundProducts: [], 
-                todayToEat: todayToEat,
+                todaysNeed: todaysNeed,
                 eatenToday: eatenToday,
             });
         });
@@ -128,8 +142,8 @@ app.post('/portion', (req, res) => {
 });
 
 app.patch('/portion', (req, res) => {
-    updatePortion(req.body.productId, req.body.quantity)
-    res.send(`Portion with product ${req.body.productId} updated`)
+    let portion = updatePortion(req.body.productId, req.body.quantity)
+    res.send(JSON.stringify(calculatePortionValues(portion.productJson, portion.quantity)))
 });
 
 app.delete('/portion', (req, res) => {
@@ -140,7 +154,9 @@ app.delete('/portion', (req, res) => {
 async function addNos(){
     foodCalcRepository.getUsersList(r => {
         if (r.length == 0)
-            foodCalcRepository.insertUser({name : "nos"});
+            foodCalcRepository.insertUser({name : "nos"}, r => {
+                console.log(`User inserted with id ${result.insertId}.`);
+            });
     })
 }
 
@@ -154,10 +170,31 @@ async function addNosNeeds(){
                 carbohydrates : 530,
                 fat : 60,
                 startDate : dateformat(new Date(), "yyyy-mm-dd")
+            }, r => {s
+                console.log(`UserNeed inserted with id ${result.insertId}`);
             });
     })
 }
+
 addNos()
 addNosNeeds()
 
-app.listen(config.node_port, config.node_host, () => console.log(`App is listening on port ${config.node_port}...`))
+app.listen(config.node_port, config.node_host, () => {
+    console.log(`App is listening on port ${config.node_port}...`)
+    foodCalcRepository.getUserNeedsValues(1, r => {
+        uderNeed = r[0]
+        todaysNeed = {
+            energy : uderNeed.energy,
+            protein : uderNeed.protein,
+            carbohydrates : uderNeed.carbohydrates,
+            fat : uderNeed.fat
+        }
+        eatenToday = {
+            energy : uderNeed.energy,
+            protein : uderNeed.protein,
+            carbohydrates : uderNeed.carbohydrates,
+            fat : uderNeed.fat
+        }
+        console.log(todaysNeed)
+    })
+})

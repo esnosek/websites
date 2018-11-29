@@ -18,19 +18,19 @@ html
                     table(id='productInfoTable', class="table")
             div(class="left")
                 caption TODAY TO EAT
-                    table(id="todayToEat", class="table")
+                    table(id="todaysNeed", class="table")
                         tr
                             td Energy
-                            td= todayToEat.energy
+                            td= todaysNeed.energy
                         tr
                             td Protein
-                            td= todayToEat.protein
+                            td= todaysNeed.protein
                         tr
                             td Carbohydrates
-                            td= todayToEat.carbohydrates
+                            td= todaysNeed.carbohydrates
                         tr
                             td Fat
-                            td= todayToEat.fat
+                            td= todaysNeed.fat
             div(class="right")
                 caption EATEN TODAY
                 table(id="eatenToday", class="table")
@@ -47,7 +47,7 @@ html
                         td Fat
                         td= eatenToday.fat
             div(class="main")
-                table(id="visiblePortions", class="table")
+                table(id="todaysPortions", class="table")
                     tr 
                         th Product
                         th Quantity
@@ -56,7 +56,7 @@ html
                         th Carbohydrates
                         th Fat
                         th 
-                    each portion in visiblePortions
+                    each portion in todaysPortions
                         tr
                             td(class="productName")= portion.name
                             td(class="quantity")
