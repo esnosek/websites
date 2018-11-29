@@ -1,5 +1,7 @@
-function addProduct(element) {
+function addProduct(event) {
+    const element = event.target
     const http = new XMLHttpRequest();
+    // TODO fetch
     http.open("POST", 'product/search');
     http.responseType = "text";
     http.setRequestHeader("Content-Type", "application/json");
@@ -78,4 +80,9 @@ function someFunction(element) {
     http.send(JSON.stringify({productId : id, quantity : quantity}));
     console.log("in some function2");
     return false;
+}
+
+var el = document.getElementsByClassName('productImage');
+for (var i=0; i < el.length; i++) {
+    el.item(i).onclick = addProduct;
 }

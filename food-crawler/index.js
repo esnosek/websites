@@ -20,18 +20,18 @@ app.use('/data', express.static(__dirname + "/data"));
 
 let todaysPortions = [];
 
-let eatenToday;
 let todaysNeed;
 
-function saveTodaysPortions(){
+async function saveTodaysPortions(cb){
     todaysPortions.filter(p => null == p.id)
         .forEach(p => foodCalcRepository.insertPortion(p, r => {
             p.id = r.insertId;
-            console.log(`Portion inserted with id ${result.insertId}.`);
+            console.log(`Portion inserted with id ${r.insertId}.`);
         }));
+    cb()
 }
 
-function addTodaysPortion(productJson, quantity){
+async function addTodaysPortion(productJson, quantity, cb){
     let now = dateformat(new Date(), "yyyy-mm-dd")
     todaysPortions.push({
         id : null, 
@@ -40,24 +40,21 @@ function addTodaysPortion(productJson, quantity){
         date : now,
         user : { id : 1 }
     })
+    cb()
 }
 
-function row(){
-
-}
-
-function updatePortion(productId, quantity){
+async function updatePortion(productId, quantity, cb){
     console.log(productId, " : ",quantity)
-    let portion = todaysPortions.find(p => p.productJson._id == productId)
-    portion.quantity = quantity
+    let portion = todaysPortions.find(p => p.productJson._id == productId);
+    portion.quantity = quantity;
     if(portion.id != null)
-        foodCalcRepository.updatePortionQuantity(curProduct.id, quantity, r => {
+        foodCalcRepository.updatePortionQuantity(portion.id, quantity, r => {
             console.log(`Portion updated ${r}.`);
         })
-    return portion
-    }
+    cb();
+}
 
-function removePortionByProductId(productId){
+async function removePortionByProductId(productId, cb){
     let curProduct = todaysPortions.find(p => p.productJson._id == productId)
     let index = todaysPortions.indexOf(curProduct);
     todaysPortions.splice(index, 1);
@@ -65,6 +62,7 @@ function removePortionByProductId(productId){
         foodCalcRepository.deletePortion(curProduct.id, r => {
             console.log(`Portion removed ${r}.`);
         })
+    cb();
 }
 
 function calculatePortionValues(productJson, quantity){
@@ -73,26 +71,26 @@ function calculatePortionValues(productJson, quantity){
         productId : productJson._id,
         name : product.productName,
         quantity: quantity,
-        energy : product.nutritionalValues.energy * 1000 * quantity / (100 * 1000),
-        protein : product.nutritionalValues.protein * 1000 * quantity / (100 * 1000),
-        carbohydrates : product.nutritionalValues.carbohydrates * 1000 * quantity / (100 * 1000),
-        fat : product.nutritionalValues.fat * 1000 * quantity / (100 * 1000)
+        energy : (product.nutritionalValues.energy * 100 * quantity / (100 * 100)).toFixed(2),
+        protein : (product.nutritionalValues.protein * 100 * quantity / (100 * 100)).toFixed(2),
+        carbohydrates : (product.nutritionalValues.carbohydrates * 100 * quantity / (100 * 100)).toFixed(2),
+        fat : (product.nutritionalValues.fat * 100 * quantity / (100 * 100)).toFixed(2)
     }
 }
 
-function updateEatenToday(product){
-    eatenToday.quantity = Math.round((eatenToday.quantity + productValues.quantity) * 100) / 100;
-    eatenToday.energy = Math.round((eatenToday.energy + productValues.energy) * 100) / 100;
-    eatenToday.protein = Math.round((eatenToday.protein + productValues.protein) * 100) / 100;
-    eatenToday.carbohydrates = Math.round((eatenToday.carbohydrates + productValues.carbohydrates) * 100) / 100;
-    eatenToday.fat = Math.round((eatenToday.fat + productValues.fat) * 100) / 100;
+function calculateEatenToday(){
+    const isEmpty = todaysPortions.length == 0
+    return {
+        quantity : isEmpty ? 0 : todaysPortions.map(p => p.quantity).reduce((a,b) => sum(a, b)),
+        energy : isEmpty ? 0 : todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)).map(p => p.energy).reduce((a,b) => sum(a, b)),
+        protein : isEmpty ? 0 : todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)).map(p => p.protein).reduce((a,b) => sum(a, b)),
+        carbohydrates : isEmpty ? 0 : todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)).map(p => p.carbohydrates).reduce((a,b) => sum(a, b)),
+        fat : isEmpty ? 0 : todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)).map(p => p.fat).reduce((a,b) => sum(a, b))
+    }
 }
 
-function updateTodaysNeed(product){
-    todaysNeed.energy = Math.round((todaysNeed.energy - productValues.energy) * 100) / 100;
-    todaysNeed.protein = Math.round((todaysNeed.protein - productValues.protein) * 100) / 100;
-    todaysNeed.carbohydrates = Math.round((todaysNeed.carbohydrates - productValues.carbohydrates) * 100) / 100;
-    todaysNeed.fat = Math.round((todaysNeed.fat - productValues.fat) * 100) / 100;
+function sum(a, b){
+    return (1000 * a + 1000 * b) / 1000;
 }
 
 app.get('/', (req, res) => {
@@ -100,20 +98,19 @@ app.get('/', (req, res) => {
         todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
         foundProducts: [], 
         todaysNeed: todaysNeed,
-        eatenToday: eatenToday
+        eatenToday: calculateEatenToday()
     });
     console.log(todaysPortions)
 });
 
 app.get('/product', (req, res) => {
-    console.log("WYSZUKUJE PO NAZWIE")
     productRepository.search(req.query.query)
         .then(r => {
             res.render('index', { 
                 todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
                 foundProducts: r.hits.hits.map(h => h._source),
                 todaysNeed: todaysNeed,
-                eatenToday: eatenToday,
+                eatenToday: calculateEatenToday()
             });
         });
 });
@@ -126,41 +123,57 @@ app.post('/product/search', (req, res) => {
 app.post('/addProduct', (req, res) => {
     productRepository.findById(req.body.productId)
         .then(r => {
-            addTodaysPortion(r, parseInt(req.body.quantity))
-            res.render('index', { 
-                todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
-                foundProducts: [], 
-                todaysNeed: todaysNeed,
-                eatenToday: eatenToday,
+            addTodaysPortion(r, parseInt(req.body.quantity), () => {
+                res.render('index', { 
+                    todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
+                    foundProducts: [], 
+                    todaysNeed: todaysNeed,
+                    eatenToday: calculateEatenToday()
+                });
             });
         });
 });
 
 app.post('/portion', (req, res) => {
-    saveTodaysPortions()
-    res.send("Portions saved")
+    saveTodaysPortions(() => res.send("Portions saved"))
 });
 
 app.patch('/portion', (req, res) => {
-    let portion = updatePortion(req.body.productId, req.body.quantity)
-    res.send(JSON.stringify(calculatePortionValues(portion.productJson, portion.quantity)))
+    updatePortion(req.body.productId, req.body.quantity, r => {
+        res.render('portions-table', { 
+            todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
+            foundProducts: [], 
+            todaysNeed: todaysNeed,
+            eatenToday: calculateEatenToday()
+        })
+        console.log(`Portion with product ${req.body.productId} updated`);       
+    })
 });
 
 app.delete('/portion', (req, res) => {
-    removePortionByProductId(req.body.productId)
-    res.send(`Portion with product ${req.body.productId} removed`)
+    removePortionByProductId(req.body.productId, () => {
+        res.render('portions-table', { 
+            todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
+            foundProducts: [], 
+            todaysNeed: todaysNeed,
+            eatenToday: calculateEatenToday()
+        })
+        console.log(`Portion with product ${req.body.productId} removed`);
+    })
 });
 
-async function addNos(){
+async function addNos(cb){
     foodCalcRepository.getUsersList(r => {
         if (r.length == 0)
             foodCalcRepository.insertUser({name : "nos"}, r => {
-                console.log(`User inserted with id ${result.insertId}.`);
+                console.log(`User inserted with id ${r.insertId}.`);
+                cb()
             });
+        else cb()
     })
 }
 
-async function addNosNeeds(){
+async function addNosNeeds(cb){
     foodCalcRepository.getUsersNeedsList(r => {
         if (r.length == 0)
             foodCalcRepository.insertUserNeeds({
@@ -170,31 +183,33 @@ async function addNosNeeds(){
                 carbohydrates : 530,
                 fat : 60,
                 startDate : dateformat(new Date(), "yyyy-mm-dd")
-            }, r => {s
-                console.log(`UserNeed inserted with id ${result.insertId}`);
+            }, r => {
+                console.log(`UserNeed inserted with id ${r.insertId}`);
+                cb()
             });
+        else cb()
     })
 }
 
-addNos()
-addNosNeeds()
-
-app.listen(config.node_port, config.node_host, () => {
-    console.log(`App is listening on port ${config.node_port}...`)
+async function setTodaysNeed(){
     foodCalcRepository.getUserNeedsValues(1, r => {
-        uderNeed = r[0]
+        let userNeed = r[0]
         todaysNeed = {
-            energy : uderNeed.energy,
-            protein : uderNeed.protein,
-            carbohydrates : uderNeed.carbohydrates,
-            fat : uderNeed.fat
+            energy : userNeed.energy,
+            protein : userNeed.protein,
+            carbohydrates : userNeed.carbohydrates,
+            fat : userNeed.fat
         }
         eatenToday = {
-            energy : uderNeed.energy,
-            protein : uderNeed.protein,
-            carbohydrates : uderNeed.carbohydrates,
-            fat : uderNeed.fat
+            energy : userNeed.energy,
+            protein : userNeed.protein,
+            carbohydrates : userNeed.carbohydrates,
+            fat : userNeed.fat
         }
         console.log(todaysNeed)
     })
+}
+app.listen(config.node_port, config.node_host, async function() {
+    console.log(`App is listening on port ${config.node_port}...`)
+    addNos(() => addNosNeeds(() => setTodaysNeed()));
 })

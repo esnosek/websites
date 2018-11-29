@@ -33,7 +33,6 @@ function insertUser(user, cb){
     connection.query(sql, function (err, result) {
         if (err) throw err;
         cb(result);
-        console.log(`User ${user.name} inserted with id ${result.insertId}.`);
     });   
 }
 
@@ -73,7 +72,6 @@ function insertPortion(portion, cb){
     connection.query(sql, function (err, result) {
         if (err) throw err;
         cb(result);
-        console.log(`Portion inserted with id ${result.insertId}.`);
     });   
 }
 

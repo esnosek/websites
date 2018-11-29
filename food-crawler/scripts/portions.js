@@ -13,7 +13,7 @@ function removePortion(productId, element) {
     http.setRequestHeader("Content-Type", "application/json");
     http.onload = function() {
         if (this.status == 200)
-            element.parentNode.parentNode.remove()
+            document.getElementById("todaysPortions").innerHTML = this.response;
     };
     http.send(JSON.stringify({productId : productId}));
 }
@@ -24,10 +24,8 @@ function updatePortionQuantity(productId, element) {
     http.responseType = "text";
     http.setRequestHeader("Content-Type", "application/json");
     http.onload = function() {
-        if (this.status == 200){
-            let tr = element.parentNode.parentNode
-            console.log(this.response)
-        }
+        if (this.status == 200)
+            document.getElementById("todaysPortions").innerHTML = this.response;
     };
     http.send(JSON.stringify({productId : productId, quantity : element.value}));
 }
