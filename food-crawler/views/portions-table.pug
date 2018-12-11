@@ -8,17 +8,17 @@ table(id="todaysPortions", class="table")
         th Fat
         th 
     each portion in todaysPortions
-        tr
+        tr(id=portion.id)
             td(class="productName")= portion.name
             td(class="quantity")
-                input(size="2", maxlength="4", value=portion.quantity, onchange="updatePortionQuantity(\"" + portion.productId + "\",this)")
+                input(class="portionQuantityInput", size="2", maxlength="4", value=portion.quantity)
                 =" g"
             td(class="energy")= portion.energy + " kcal"
             td(class="protein")= portion.protein + " g"
             td(class="carbohydrates")= portion.carbohydrates + " g"
             td(class="fat")= portion.fat + " g"
             td(class="removeButton")
-                button(onclick="removePortion(\"" + portion.productId + "\",this)") remove
+                button(class="removePortionButton") remove
     tr
         td 
             strong SUMA
@@ -33,4 +33,3 @@ table(id="todaysPortions", class="table")
         td
             strong= eatenToday.fat + " g"
         td
-    script(src='scripts/portions.js' type="text/javascript")

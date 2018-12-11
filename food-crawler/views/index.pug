@@ -4,51 +4,13 @@ html
         title Food Calc
     body
         div(class="grid-container")
-            div(class="search")
-                form(method="GET", action="/product" enctype="application/json")
-                    input(id="query", type="text", name="query")
-                    button(id="submit" type="submit")= "Search"
-                div(id='products', class="flex-container")
-                    each product in foundProducts
-                        div(class="container")
-                            - var img = "data/" + product.id + "/" + product.images[0]
-                            img(class="productImage", id=product.productName, src=img)
-                            div(class="bottom-left")= product.productName
-                div(id="productInfo")
-                    table(id='productInfoTable', class="table")
-            div(class="left")
-                caption TODAY TO EAT
-                    table(id="todaysNeed", class="table")
-                        tr
-                            td Energy
-                            td= todaysNeed.energy
-                        tr
-                            td Protein
-                            td= todaysNeed.protein
-                        tr
-                            td Carbohydrates
-                            td= todaysNeed.carbohydrates
-                        tr
-                            td Fat
-                            td= todaysNeed.fat
-            div(class="right")
-                caption EATEN TODAY
-                table(id="eatenToday", class="table")
-                    tr
-                        td Energy
-                        td= eatenToday.energy
-                    tr
-                        td Protein
-                        td= eatenToday.protein
-                    tr
-                        td Carbohydrates
-                        td= eatenToday.carbohydrates
-                    tr
-                        td Fat
-                        td= eatenToday.fat
-            div(class="main")
+            div(id="search-menu", class="search")
+                include search-menu.pug
+            div(id="left-menu",class="left")
+                include left-menu.pug
+            div(id="right-menu",class="right")
+                include right-menu.pug
+            div(id="main-menu",class="main")
                 include portions-table.pug
-                button(id="save" onclick="savePortions()") Zapisz
-
-    script(src='scripts/products.js' type="text/javascript")
-    script(src='scripts/portions.js' type="text/javascript")
+script(src='scripts/products.js' type="text/javascript")
+script(src='scripts/portions.js' type="text/javascript")

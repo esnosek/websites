@@ -19,56 +19,52 @@ app.use('/styles', express.static(__dirname + "/styles"));
 app.use('/data', express.static(__dirname + "/data"));
 
 let todaysPortions = [];
-
 let todaysNeed;
 
-async function saveTodaysPortions(cb){
-    todaysPortions.filter(p => null == p.id)
-        .forEach(p => foodCalcRepository.insertPortion(p, r => {
-            p.id = r.insertId;
-            console.log(`Portion inserted with id ${r.insertId}.`);
-        }));
-    cb()
-}
-
-async function addTodaysPortion(productJson, quantity, cb){
-    let now = dateformat(new Date(), "yyyy-mm-dd")
-    todaysPortions.push({
+async function savePortion(productJson, quantity, cb){
+    let now = dateformat(new Date(), "yyyy-mm-dd");
+    const portion = {
         id : null, 
         productJson : productJson, 
         quantity : quantity, 
         date : now,
         user : { id : 1 }
-    })
-    cb()
+    };
+    foodCalcRepository.insertPortion(portion, r => {
+        portion.id = r.insertId;
+        console.log(`Portion inserted with id ${r.insertId}.`);
+        todaysPortions.push(portion)
+        cb()
+    });
+
 }
 
-async function updatePortion(productId, quantity, cb){
-    console.log(productId, " : ",quantity)
-    let portion = todaysPortions.find(p => p.productJson._id == productId);
+async function updatePortion(portionId, quantity, cb){
+    console.log(portionId, " : ",quantity)
+    let portion = todaysPortions.find(p => p.id == portionId);
     portion.quantity = quantity;
-    if(portion.id != null)
-        foodCalcRepository.updatePortionQuantity(portion.id, quantity, r => {
-            console.log(`Portion updated ${r}.`);
-        })
+    foodCalcRepository.updatePortionQuantity(portionId, quantity, r => {
+        console.log(`Portion updated ${r}.`);
+    })
     cb();
 }
 
-async function removePortionByProductId(productId, cb){
-    let curProduct = todaysPortions.find(p => p.productJson._id == productId)
-    let index = todaysPortions.indexOf(curProduct);
+async function removePortion(portionId, cb){
+    let curPortion = todaysPortions.find(p => p.id == portionId)
+    let index = todaysPortions.indexOf(curPortion);
     todaysPortions.splice(index, 1);
-    if(curProduct.id != null)
-        foodCalcRepository.deletePortion(curProduct.id, r => {
-            console.log(`Portion removed ${r}.`);
-        })
+    foodCalcRepository.deletePortion(curPortion.id, r => {
+        console.log(`Portion removed ${r}.`);
+    })
     cb();
 }
 
-function calculatePortionValues(productJson, quantity){
-    const product = productJson._source
+function calculatePortionValues(p){
+    const product = p.productJson._source
+    const quantity = p.quantity
     return {
-        productId : productJson._id,
+        id : p.id,
+        productId : p.productJson._id,
         name : product.productName,
         quantity: quantity,
         energy : (product.nutritionalValues.energy * 100 * quantity / (100 * 100)).toFixed(2),
@@ -79,54 +75,53 @@ function calculatePortionValues(productJson, quantity){
 }
 
 function calculateEatenToday(){
+    let sum = (a, b) => (1000 * a + 1000 * b) / 1000;
     const isEmpty = todaysPortions.length == 0
     return {
         quantity : isEmpty ? 0 : todaysPortions.map(p => p.quantity).reduce((a,b) => sum(a, b)),
-        energy : isEmpty ? 0 : todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)).map(p => p.energy).reduce((a,b) => sum(a, b)),
-        protein : isEmpty ? 0 : todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)).map(p => p.protein).reduce((a,b) => sum(a, b)),
-        carbohydrates : isEmpty ? 0 : todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)).map(p => p.carbohydrates).reduce((a,b) => sum(a, b)),
-        fat : isEmpty ? 0 : todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)).map(p => p.fat).reduce((a,b) => sum(a, b))
+        energy : isEmpty ? 0 : todaysPortions.map(p => calculatePortionValues(p)).map(p => p.energy).reduce((a,b) => sum(a, b)),
+        protein : isEmpty ? 0 : todaysPortions.map(p => calculatePortionValues(p)).map(p => p.protein).reduce((a,b) => sum(a, b)),
+        carbohydrates : isEmpty ? 0 : todaysPortions.map(p => calculatePortionValues(p)).map(p => p.carbohydrates).reduce((a,b) => sum(a, b)),
+        fat : isEmpty ? 0 : todaysPortions.map(p => calculatePortionValues(p)).map(p => p.fat).reduce((a,b) => sum(a, b))
     }
-}
-
-function sum(a, b){
-    return (1000 * a + 1000 * b) / 1000;
 }
 
 app.get('/', (req, res) => {
     res.render('index', { 
-        todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
-        foundProducts: [], 
+        todaysPortions: todaysPortions.map(p => calculatePortionValues(p)), 
         todaysNeed: todaysNeed,
         eatenToday: calculateEatenToday()
     });
     console.log(todaysPortions)
 });
 
-app.get('/product', (req, res) => {
+app.get('/search', (req, res) => {
     productRepository.search(req.query.query)
         .then(r => {
             res.render('index', { 
-                todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
-                foundProducts: r.hits.hits.map(h => h._source),
+                todaysPortions: todaysPortions.map(p => calculatePortionValues(p)), 
                 todaysNeed: todaysNeed,
-                eatenToday: calculateEatenToday()
+                eatenToday: calculateEatenToday(),
+                foundProducts: r.hits.hits.map(h => h._source)
             });
         });
 });
 
-app.post('/product/search', (req, res) => {
-    productRepository.findByProductName(req.body.productName)
-        .then(r => res.send(r.hits.hits[0]));
+app.get('/product', (req, res) => {
+    productRepository.findById(req.query.productId)
+        .then(r => {
+            res.render('search-menu', { 
+                product: r._source
+            });
+        });
 });
 
-app.post('/addProduct', (req, res) => {
+app.post('/portion', (req, res) => {
     productRepository.findById(req.body.productId)
         .then(r => {
-            addTodaysPortion(r, parseInt(req.body.quantity), () => {
-                res.render('index', { 
-                    todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
-                    foundProducts: [], 
+            savePortion(r, parseInt(req.body.quantity), () => {
+                res.render('index', {
+                    todaysPortions: todaysPortions.map(p => calculatePortionValues(p)), 
                     todaysNeed: todaysNeed,
                     eatenToday: calculateEatenToday()
                 });
@@ -134,15 +129,10 @@ app.post('/addProduct', (req, res) => {
         });
 });
 
-app.post('/portion', (req, res) => {
-    saveTodaysPortions(() => res.send("Portions saved"))
-});
-
 app.patch('/portion', (req, res) => {
-    updatePortion(req.body.productId, req.body.quantity, r => {
+    updatePortion(req.body.portionId, req.body.quantity, r => {
         res.render('portions-table', { 
-            todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
-            foundProducts: [], 
+            todaysPortions: todaysPortions.map(p => calculatePortionValues(p)), 
             todaysNeed: todaysNeed,
             eatenToday: calculateEatenToday()
         })
@@ -151,14 +141,13 @@ app.patch('/portion', (req, res) => {
 });
 
 app.delete('/portion', (req, res) => {
-    removePortionByProductId(req.body.productId, () => {
+    removePortion(req.body.portionId, () => {
         res.render('portions-table', { 
-            todaysPortions: todaysPortions.map(p => calculatePortionValues(p.productJson, p.quantity)), 
-            foundProducts: [], 
+            todaysPortions: todaysPortions.map(p => calculatePortionValues(p)), 
             todaysNeed: todaysNeed,
             eatenToday: calculateEatenToday()
         })
-        console.log(`Portion with product ${req.body.productId} removed`);
+        console.log(`Portion ${req.body.portionId} removed`);
     })
 });
 
