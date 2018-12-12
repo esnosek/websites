@@ -11,7 +11,7 @@ table(id="todaysPortions", class="table")
         tr(id=portion.id)
             td(class="productName")= portion.name
             td(class="quantity")
-                input(class="portionQuantityInput", size="2", maxlength="4", value=portion.quantity)
+                input(class="portionQuantityInput", type="number", value=portion.quantity)
                 =" g"
             td(class="energy")= portion.energy + " kcal"
             td(class="protein")= portion.protein + " g"

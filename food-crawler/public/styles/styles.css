@@ -18,6 +18,10 @@
   resize: none;
 }
 
+.portionQuantityInput {
+  width: 4em;
+}
+
 .grid-container {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;

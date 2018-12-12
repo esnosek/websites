@@ -7,16 +7,17 @@ const delimiter = linux ? "/" : "\\"
 
 async function processData(result){
     const id = getName(result["link"])
-    const dataDir = "data" + delimiter + id
+    const jsonDir = "data" + delimiter + "json"
+    const imgDir = "data" + delimiter + "images" + delimiter + id
     processedResult = {}
     processedResult["id"] = id
-    processedResult["images"] = await downloadImages(result, dataDir)
+    processedResult["images"] = await downloadImages(result, imgDir)
     processedResult["categoryName"] = result["categoryName"]
     processedResult["productName"] = result["productName"]
     processedResult["nutritionalValues"] = await processNutritionalValues100g(result)
     processedResult["nutritionalValuesPhoto"] = await processNutritionalValuesPhoto(result)
     processedResult["information"] = await processInformation(result)
-    saveJSON(processedResult, dataDir, id)
+    saveJSON(processedResult, jsonDir, id)
 }
 
 async function saveJSON(result, dataDir, name){

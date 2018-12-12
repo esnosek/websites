@@ -24,4 +24,17 @@ function addPortion(event) {
     return false;
 }
 
+function changeDay(event) {
+    const http = new XMLHttpRequest();
+    http.open("POST", 'day');
+    http.responseType = "text";
+    http.setRequestHeader("Content-Type", "application/json");
+    http.onload = function() {
+        if (this.status == 200)
+            document.location.replace("/")
+    };
+    http.send(JSON.stringify({day : event.target.value}));
+}
+
+document.getElementById('day').onchange = changeDay
 Array.from(document.getElementsByClassName('productImage')).forEach(e => e.onclick = showProductInfo);

@@ -10,6 +10,8 @@ const delimiter = linux ? "/" : "\\"
 
 async function collectProducts() {
     if(!fs.existsSync("data")) fs.mkdirSync("data")
+    if(!fs.existsSync("data" + delimiter + "images")) fs.mkdirSync("data" + delimiter + "images")
+    if(!fs.existsSync("data" + delimiter + "json")) fs.mkdirSync("data" + delimiter + "json")
     driver.get("http://www.ilewazy.pl")
     await clickAcceptButton()
     await clickToProducts()
@@ -20,7 +22,7 @@ async function collectProducts() {
         console.log("Processing " + ++i + " page")
         console.log("Links: ", productsLinks, "\n")
         for(const link of productsLinks) {
-            if(!fs.existsSync("data" + delimiter + getName(link))){
+            if(!fs.existsSync("data" + delimiter + "json" + delimiter + getName(link) + ".json")){
                 await openInNewTab(link)
                 await processData(link)
                 await driver.close()

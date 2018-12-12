@@ -5,7 +5,7 @@ if foundProducts
     div(id='products', class="flex-container")
         each p in foundProducts
             div(class="container")
-                - var img = "data/" + p.id + "/" + p.images[0]
+                - var img = "images/" + p.id + "/" + p.images[0]
                 img(class="productImage", id=p.id, src=img)
                 div(class="bottom-left")= p.productName
 if product
@@ -16,6 +16,6 @@ if product
                     td= index
                     td= val
         form(id="portionForm", method="POST", enctype="application/json")
-            input(id="quantity", type="text", name="quantity")
+            input(id="quantity", type="number", name="quantity")
             input(id="productId", type="hidden", name="productId", value=product.id)
             button(id="submitPortion" type="submit")= "Add product"
