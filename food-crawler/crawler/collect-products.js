@@ -150,7 +150,7 @@ async function click(element){
 try {
     driver = new Builder()
         .forBrowser('firefox')
-        .setFirefoxOptions(new firefox.Options().headless())
+        //.setFirefoxOptions(new firefox.Options().headless())
         .build()
     collectProducts()
 } catch(e) {
